@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.8.8 - Result UI Update</title>
+    <title>둥둥그라운드 v1.8.9 - Result UI Detail Up</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -47,8 +47,14 @@
         #life-text { font-family: "Tomorrow", sans-serif; font-size: 17px; font-weight: 500; color: #000; letter-spacing: 0.08em; }
 
         #result-screen { 
-            position: absolute; inset: 0; background:rgba(0,0,0,0.8); z-index:200; display:none; 
+            position: absolute; inset: 0; z-index:200; display:none; 
             flex-direction:column; justify-content:center; align-items:center; color:white; text-align:center; 
+        }
+        
+        /* 결과창 텍스트/이미지 그룹을 버튼과 분리하여 화면 중앙에 배치 */
+        .result-content-wrap {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            margin-top: -40px; /* 버튼 공간만큼 살짝 위로 올려서 밸런스 조정 */
         }
     </style>
 </head>
@@ -86,14 +92,16 @@
     <canvas id="gameCanvas"></canvas>
 
     <div id="result-screen">
-        <h1 id="result-title" style="font-size: 42px; font-weight: 700; margin-bottom: 12px; margin-top: 0;">작전 완료!</h1>
-        <p id="result-desc" style="font-size: 18px; margin: 0 0 30px 0;">
-            보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 28px; font-weight: 700;">0</span>개 획득 했어요
-        </p>
+        <div class="result-content-wrap">
+            <h1 id="result-title" style="font-size: 42px; font-weight: 700; margin-bottom: 12px; margin-top: 0;">작전 완료!</h1>
+            <p id="result-desc" style="font-size: 18px; margin: 0 0 30px 0;">
+                보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 28px; font-weight: 700;">0</span>개 획득 했어요
+            </p>
+            
+            <img id="result-img" src="result_complete.png" style="width: 154px; height: auto; object-fit: contain;">
+        </div>
         
-        <img id="result-img" src="result_complete.png" style="width: 220px; height: auto; margin-bottom: 40px; object-fit: contain;">
-        
-        <button id="retry-btn" onclick="location.reload()" style="width: calc(100% - 48px); height: 64px; background-color: #FFDB29; color: #111; font-size: 18px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; font-family: 'Pretendard', sans-serif;">재도전</button>
+        <button id="retry-btn" onclick="location.reload()" style="position: absolute; bottom: 60px; left: 24px; width: calc(100% - 48px); height: 64px; background-color: #FFDB29; color: #111; font-size: 18px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; font-family: 'Pretendard', sans-serif;">재도전</button>
     </div>
 </div>
 
@@ -205,7 +213,7 @@
         objects = [];
     }
 
-    // 결과창 UI 분기 처리 적용
+    // 배경 분기 및 딤드 처리 적용
     function gameOver(title) {
         state = 'END'; 
         const resultScreen = document.getElementById('result-screen');
@@ -215,12 +223,14 @@
         document.getElementById('result-title').innerText = title;
 
         if (title.includes("실패")) {
-            resultScreen.style.background = '#3B4559'; // 시안의 어두운 네이비
+            // 네이비 계열의 딤드 (투명도 65%)
+            resultScreen.style.background = 'rgba(59, 69, 89, 0.65)'; 
             resultScreen.style.color = '#FFFFFF';
             descEl.innerHTML = "다시 도전해볼까요?";
             imgEl.src = "result_incomplete.png";
         } else {
-            resultScreen.style.background = '#D1EDFE'; // 시안의 밝은 하늘색
+            // 성공 전용 bg 이미지 적용
+            resultScreen.style.background = "url('bg_complete.png') no-repeat center center / cover"; 
             resultScreen.style.color = '#111111';
             descEl.innerHTML = `보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 28px; font-weight: 700;">${score}</span>개 획득 했어요`;
             imgEl.src = "result_complete.png";
