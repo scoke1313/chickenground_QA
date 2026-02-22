@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.9.10 - Hide Life UI on Success</title>
+    <title>둥둥그라운드 v1.9.10 - Perfect Result Screen</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -104,7 +103,7 @@
                 보급품 <span id="final-score" style="font-size: 24px; font-weight: 600;">0</span>개 획득 했어요
             </p>
             
-            <img id="result-img" src="result_complete.png" style="width: 210px; height: 210px; object-fit: contain; margin-top: 55px;">
+            <img id="result-img" src="result_complete.png" style="width: 189px; height: 189px; object-fit: contain; margin-top: 63px;">
         </div>
         
         <div class="btn-group">
@@ -115,9 +114,14 @@
 </div>
 
 <script>
+    // --- 결과창 이미지들 프리로딩 리스트에 추가 (배경 및 캐릭터 지연 로딩 완벽 방지) ---
     const imgList = [
         'bg_main', 'bg_main.png', 
         'btn_start', 'btn_start.svg',
+        'bg_complete', 'bg_complete.png',             // 결과 성공 배경
+        'bg_incomplete', 'bg_incomplete.png',         // 결과 실패 배경
+        'result_complete', 'result_complete.png',     // 결과 성공 춘식이
+        'result_incomplete', 'result_incomplete.png', // 결과 실패 춘식이
         'player', 'dong_chun.svg', 'face_happy', 'dong_chun_happy.svg', 'face_miss', 'dong_chun_miss.svg', 
         'crate', 'create_m.png', 'gold', 'gold.svg', 'heli', 'heli.png', 
         'cloud1', 'cloud_1.svg', 'cloud2', 'cloud_2.svg', 'cloud3', 'cloud_3.svg', 
@@ -263,7 +267,7 @@
         const descEl = document.getElementById('result-desc');
         const imgEl = document.getElementById('result-img');
         const hud = document.getElementById('hud');
-        const lifeContainer = document.getElementById('life-container'); // 라이프 컨테이너 가져오기
+        const lifeContainer = document.getElementById('life-container');
         
         document.getElementById('result-title').innerText = title;
 
@@ -273,14 +277,14 @@
             descEl.innerHTML = "다시 도전해볼까요?";
             imgEl.src = "result_incomplete.png";
             hud.style.zIndex = '50';
-            lifeContainer.style.display = 'flex'; // 실패 시에는 라이프 컨테이너 유지
+            lifeContainer.style.display = 'flex';
         } else {
             resultScreen.style.background = "url('bg_complete.png') no-repeat center center / cover"; 
             resultScreen.style.color = '#111111';
             descEl.innerHTML = `보급품 <span id="final-score" style="font-size: 24px; font-weight: 600;">${score}</span>개 획득 했어요`;
             imgEl.src = "result_complete.png";
             hud.style.zIndex = '250'; 
-            lifeContainer.style.display = 'none'; // 성공 시 라이프 컨테이너 숨기기
+            lifeContainer.style.display = 'none'; 
         }
 
         resultScreen.style.display = 'flex';
@@ -305,7 +309,7 @@
         document.getElementById('score-val').innerText = '0';
         updateAltimeter(1500);
         document.getElementById('hud').style.zIndex = '50';
-        document.getElementById('life-container').style.display = 'flex'; // 재도전 시 라이프 컨테이너 원상복구
+        document.getElementById('life-container').style.display = 'flex'; 
         
         state = 'PLAY';
         for(let j=0; j<5; j++) spawnCloud(Math.random() * HEIGHT);
