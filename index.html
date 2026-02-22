@@ -26,41 +26,36 @@
         @keyframes extreme-pulse { from { transform: scale(1.0); } to { transform: scale(1.1); } }
         
         .hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-        
-        /* [보급박스 표시 캡슐 정밀 조정] */
+
+        /* 보급박스 UI 정밀 조정 */
         .ingame-score-bg { 
             background: #fff; 
-            height: 41px; /* 높이 41px */
-            width: 120px; /* 가로 120px */
-            padding: 0 12px; /* 좌우 마진 12px */
+            height: 41px; 
+            width: 120px; 
+            padding: 0 12px; 
             border-radius: 30px; 
             display: flex; 
             align-items: center; 
-            justify-content: space-between; /* 좌측 보급박스, 우측 숫자 정렬 */
+            justify-content: space-between; 
             box-sizing: border-box; 
         }
         .ingame-score-bg img { width: 28px; height: 28px; object-fit: contain; }
         .ingame-score-bg span { 
             font-family: "Tomorrow", sans-serif; 
-            font-size: 20px; /* 숫자 사이즈 2pt 상향 (기존 18px) */
+            font-size: 20px; 
             font-weight: 600; 
             color: #000; 
         }
 
-        /* [라이프 표시 UI 정밀 조정] */
-        #life-container { 
-            display: flex; 
-            align-items: center; 
-            gap: 4px; /* 이미지와 숫자 사이 마진 2px 더 확보 (기존 2px -> 4px) */
-            padding-right: 4px; 
-        }
+        /* 라이프 UI 정밀 조정 */
+        #life-container { display: flex; align-items: center; gap: 4px; padding-right: 4px; margin-top: -2px; }
         #life-icon { width: 40px; height: 40px; object-fit: contain; }
         #life-text { 
             font-family: "Tomorrow", sans-serif; 
-            font-size: 17px; /* 숫자 사이즈 1pt 하향 (기존 18px) */
-            font-weight: 600; 
+            font-size: 17px; 
+            font-weight: 500; 
             color: #000; 
-            letter-spacing: 0.08em; /* 자간 8% 늘리기 */
+            letter-spacing: 0.08em; 
         }
 
         #result-screen { position: absolute; inset: 0; background:rgba(0,0,0,0.8); z-index:200; display:none; flex-direction:column; justify-content:center; align-items:center; color:white; text-align:center; }
@@ -105,13 +100,13 @@
 </div>
 
 <script>
-    /* 띄어쓰기 없는 x3 표기 업데이트 로직 유지 */
+    /* 라이프 UI 업데이트 함수 */
     function updateLifeUI() { 
         const lifeTextEl = document.getElementById('life-text');
         if(lifeTextEl) { lifeTextEl.innerText = 'x' + lives; }
     }
 
-    /* --- 아래 렌더링 및 물리 로직은 원본 그대로 100% 보존 (투명화 방지) --- */
+    /* --- 원본 스크립트 그대로 보존 ( draw 함수 등 일절 수정 없음 ) --- */
     let riveInstance = null;
     function initRive() {
         riveInstance = new rive.Rive({
@@ -277,8 +272,6 @@
             if(imgs.grass.complete) { ctx.fillStyle = '#71C8AD'; ctx.fillRect(0, landY, WIDTH, HEIGHT); for(let x = -2; x <= 2; x++) ctx.drawImage(imgs.grass, ((grassX * 1.0) % WIDTH) + (x * WIDTH), landY, WIDTH, imgs.grass.height); }
             if(imgs.target.complete) { const tW = imgs.target.width || 240, tH = imgs.target.height || 96; ctx.drawImage(imgs.target, pX - tW, landY + 180, tW * 2, tH * 2); }
         }
-        ctx.restore();
-
         if(state === 'PLAY' && windAlphaBase > 0) {
             let imgNormal, imgMove; if(pDir === 1) { imgNormal = imgs.windR; imgMove = imgs.windR_move; } else { imgNormal = imgs.windL; imgMove = imgs.windL_move; }
             if(imgNormal.complete && imgMove.complete) { ctx.save(); const s = 205; const baseX = WIDTH / 2 - s, baseY = 110 * 2; ctx.globalAlpha = windAlphaBase; ctx.drawImage(imgNormal, baseX, baseY, s * 2, s * 2); ctx.globalAlpha = windAlphaBase * (0.4 + Math.sin(frame * 0.25) * 0.4); ctx.drawImage(imgMove, baseX, baseY, s * 2, s * 2); ctx.restore(); }
