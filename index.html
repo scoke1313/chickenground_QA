@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.8.6 - UI Details</title>
+    <title>둥둥그라운드 v1.8.7 - Precision UI Fix</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -19,10 +19,9 @@
         
         .hud-info { width: 100%; padding: 12px 20px 0; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-start; }
         
-        /* [요청사항 반영: gap 4px로 축소(-6px), margin-left로 17px 좌측 이동] */
-        .hud-left { display: flex; align-items: center; gap: 4px; margin-left: -17px; }
+        /* [미세조정: 상단으로 2px 올림] */
+        .hud-left { display: flex; align-items: center; gap: 4px; margin-left: -17px; margin-top: -2px; }
         
-        /* [요청사항 반영: 사이즈 50x50으로 세팅] */
         .altimeter-wrap { position: relative; width: 50px; height: 50px; } 
         .alt-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
         #alt-niddle { transform-origin: center; transform: rotate(0deg); }
@@ -30,6 +29,10 @@
         .dist-val-wrap { 
             font-family: "Tomorrow", sans-serif; font-size: 32px; font-weight: 600; color: #000; letter-spacing: -1px; line-height: 1; display: flex; align-items: baseline; 
         }
+        
+        /* [미세조정: 거리 숫자만 3px 더 올림] */
+        #dist-val { position: relative; top: -3px; }
+        
         .dist-unit { font-family: 'Pretendard', sans-serif; font-size: 18px; font-weight: 700; margin-left: 2px; color: inherit; }
 
         #altitude-area.is-danger .dist-val-wrap, #altitude-area.is-danger #dist-val, #altitude-area.is-danger .dist-unit { color: #D4574B !important; }
