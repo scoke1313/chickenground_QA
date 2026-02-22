@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.8.5 - Altimeter X2 Fix</title>
+    <title>둥둥그라운드 v1.8.6 - UI Details</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -19,9 +19,11 @@
         
         .hud-info { width: 100%; padding: 12px 20px 0; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-start; }
         
-        /* [고도계 사이즈 2배 확대 및 레이아웃] */
-        .hud-left { display: flex; align-items: center; gap: 10px; }
-        .altimeter-wrap { position: relative; width: 56px; height: 56px; } /* 28px -> 56px 확대 */
+        /* [요청사항 반영: gap 4px로 축소(-6px), margin-left로 17px 좌측 이동] */
+        .hud-left { display: flex; align-items: center; gap: 4px; margin-left: -17px; }
+        
+        /* [요청사항 반영: 사이즈 50x50으로 세팅] */
+        .altimeter-wrap { position: relative; width: 50px; height: 50px; } 
         .alt-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
         #alt-niddle { transform-origin: center; transform: rotate(0deg); }
 
@@ -88,20 +90,6 @@
 </div>
 
 <script>
-    function updateLifeUI() { 
-        const lifeTextEl = document.getElementById('life-text');
-        if(lifeTextEl) { lifeTextEl.innerText = 'x' + lives; }
-    }
-
-    function updateAltimeter(currentDist) {
-        const niddle = document.getElementById('alt-niddle');
-        if (!niddle) return;
-        const ratio = 1 - (Math.max(0, currentDist) / 1500);
-        const angle = ratio * 180;
-        niddle.style.transform = `rotate(${angle}deg)`;
-    }
-
-    /* --- [완벽 복구] 렌더링 및 물리 로직 원본 그대로 유지 --- */
     let riveInstance = null;
     function initRive() {
         riveInstance = new rive.Rive({
@@ -114,25 +102,6 @@
         });
     }
     window.addEventListener('load', initRive);
-
-    window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space') {
-            if (state === 'MAIN') forceStart();
-            else if (state === 'PLAY') { pDir *= -1; windTimer = 0; windAlphaBase = 0; }
-            else if (state === 'END') location.reload();
-        }
-    });
-
-    function forceStart() {
-        if (state !== 'MAIN') return;
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        if(riveInstance) riveInstance.cleanup(); 
-        document.getElementById('main-screen').style.display = 'none';
-        document.getElementById('hud').style.display = 'block';
-        state = 'PLAY';
-        for(let j=0; j<5; j++) spawnCloud(Math.random() * HEIGHT);
-        loop(); 
-    }
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
@@ -180,17 +149,32 @@
     const springK = 0.18, friction = 0.75, GLOBAL_SPEED = 17.7; 
     let landY = HEIGHT + 1000, spawnDeck = [];
 
+    function updateLifeUI() { 
+        const lifeTextEl = document.getElementById('life-text');
+        if(lifeTextEl) { lifeTextEl.innerText = 'x' + lives; }
+    }
+
+    function updateAltimeter(currentDist) {
+        const niddle = document.getElementById('alt-niddle');
+        if (!niddle) return;
+        const ratio = 1 - (Math.max(0, currentDist) / 1500);
+        const angle = ratio * 180;
+        niddle.style.transform = `rotate(${angle}deg)`;
+    }
+
     function refillSpawnDeck() {
         let newItems = ['GOLD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD', 'BAD'];
         for(let i=0; i<90; i++) newItems.push('CRATE');
         for (let i = newItems.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [newItems[i], newItems[j]] = [newItems[j], newItems[i]]; }
         spawnDeck = [...newItems];
     }
+
     function spawnCloud(y) {
         const depth = Math.floor(Math.random() * 2);
         const baseScale = depth === 0 ? 0.39 : 0.26;
         clouds.push({ x: Math.random() * WIDTH, y: y || HEIGHT + 150, img: imgs['cloud'+(Math.floor(Math.random()*3)+1)], scale: baseScale * 1.3, alpha: depth === 0 ? 0.8 : 0.5, speed: depth === 0 ? 4.0 : 2.0, depth });
     }
+
     function spawnObj() {
         if(stopSpawning) return;
         if(spawnDeck.length === 0) refillSpawnDeck();
@@ -206,16 +190,37 @@
         combo++; comboTimer = 30; popScale = 1.4;
         for(let i=0; i<8; i++) { comboParticles.push({ x: 250 * 2 + 20, y: (150 * 2) + 60, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, life: 30, size: Math.random() * 6 + 4 }); }
     }
+
     function triggerGoldFever() {
         playSound('gold'); currentFace = 'happy'; faceTimer = 78; isGoldFever = true; 
         objects.forEach(o => { if(o.type === 'CRATE') { score += (combo >= 20) ? 2 : 1; addCombo(); fx.push({ x: o.x, y: o.y, img: imgs.effect, life: 60, follow: false, vy: -5, isEffect: true }); } });
         objects = [];
     }
+
     function gameOver(title) {
         state = 'END'; document.getElementById('result-title').innerText = title;
         document.getElementById('final-score').innerText = score;
         document.getElementById('result-screen').style.display = 'flex';
     }
+
+    function forceStart() {
+        if (state !== 'MAIN') return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        if(riveInstance) riveInstance.cleanup(); 
+        document.getElementById('main-screen').style.display = 'none';
+        document.getElementById('hud').style.display = 'block';
+        state = 'PLAY';
+        for(let j=0; j<5; j++) spawnCloud(Math.random() * HEIGHT);
+        loop(); 
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+            if (state === 'MAIN') forceStart();
+            else if (state === 'PLAY') { pDir *= -1; windTimer = 0; windAlphaBase = 0; }
+            else if (state === 'END') location.reload();
+        }
+    });
 
     canvas.addEventListener('mousedown', () => { if(state === 'PLAY') { pDir *= -1; windTimer = 0; windAlphaBase = 0; } });
     canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(state === 'PLAY') { pDir *= -1; windTimer = 0; windAlphaBase = 0; } }, {passive: false});
@@ -230,75 +235,105 @@
         let targetRot = (pDir === 1) ? -27 * Math.PI / 180 : 0;
         rotVel = (rotVel + (targetRot - currentRotation) * springK) * friction;
         currentRotation += rotVel;
+
         if(state === 'PLAY') {
             dist -= 1.29; mountainX -= pDir * 2.07; grassX -= pDir * 11.5;
             if(frame % 7 === 0) spawnObj(); if(frame % 80 === 0) spawnCloud();
             windTimer++; if(windAlphaBase < 1) windAlphaBase += 0.1; 
         }
+
         comboParticles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if(p.life <= 0) comboParticles.splice(i, 1); });
+        
         const currentDist = Math.max(0, Math.floor(dist));
         document.getElementById('dist-val').innerText = currentDist;
-        
         updateAltimeter(currentDist);
 
         const altitudeArea = document.getElementById('altitude-area');
-        if(currentDist <= 300) { altitudeArea.classList.add('is-danger'); if(currentDist > 0 && state === 'PLAY') altitudeArea.classList.add('danger-pulse'); else altitudeArea.classList.remove('danger-pulse');
+        if(currentDist <= 300) { 
+            altitudeArea.classList.add('is-danger'); 
+            if(currentDist > 0 && state === 'PLAY') altitudeArea.classList.add('danger-pulse'); 
+            else altitudeArea.classList.remove('danger-pulse');
         } else altitudeArea.classList.remove('is-danger', 'danger-pulse');
+        
         document.getElementById('score-val').innerText = score;
         const targetArrivalY = pY + 140 - 248;
-        if(dist < 150 && state === 'PLAY') { if(landY > targetArrivalY) landY -= GLOBAL_SPEED; else { landY = targetArrivalY; if(dist <= 5) { dist = 0; state = 'LANDED'; setTimeout(() => gameOver("작전 완료!"), 500); } } stopSpawning = true; }
-        objects.forEach((o, i) => { o.y -= GLOBAL_SPEED; o.x -= pDir * 11.5; if(o.y < -200) { objects.splice(i, 1); return; } 
+        if(dist < 150 && state === 'PLAY') { 
+            if(landY > targetArrivalY) landY -= GLOBAL_SPEED; 
+            else { 
+                landY = targetArrivalY; 
+                if(dist <= 5) { dist = 0; state = 'LANDED'; setTimeout(() => gameOver("작전 완료!"), 500); } 
+            } 
+            stopSpawning = true; 
+        }
+
+        objects.forEach((o, i) => { 
+            o.y -= GLOBAL_SPEED; o.x -= pDir * 11.5; 
+            if(o.y < -200) { objects.splice(i, 1); return; } 
             if(state === 'PLAY' && Math.sqrt((pX - o.x)**2 + (pY - o.y)**2) < 115) {
-                if(o.type === 'BAD') { playSound('hit'); lives--; score = Math.max(0, score - 10); combo = 0; comboTimer = 0; isGoldFever = false; updateLifeUI(); hitShakeFrame = 10; currentFace = 'miss'; faceTimer = 78; fx.push({ x: pX + 70, y: pY + 20, img: imgs.damage, life: 60, follow: true, vy: -4.2, isEffect: false }); if(lives <= 0) setTimeout(() => gameOver("작전 실패..."), 500);
+                if(o.type === 'BAD') { 
+                    playSound('hit'); lives--; score = Math.max(0, score - 10); combo = 0; comboTimer = 0; isGoldFever = false; 
+                    updateLifeUI(); hitShakeFrame = 10; currentFace = 'miss'; faceTimer = 78; 
+                    fx.push({ x: pX + 70, y: pY + 20, img: imgs.damage, life: 60, follow: true, vy: -4.2, isEffect: false }); 
+                    if(lives <= 0) setTimeout(() => gameOver("작전 실패..."), 500);
                 } else if(o.type === 'GOLD') triggerGoldFever();
-                else { playSound('item'); score += (combo >= 20) ? 2 : 1; addCombo(); if(isGoldFever) isGoldFever = false; fx.push({ x: o.x, y: o.y, img: imgs.effect, life: 60, follow: false, vy: -5, isEffect: true }); }
+                else { 
+                    playSound('item'); score += (combo >= 20) ? 2 : 1; addCombo(); 
+                    if(isGoldFever) isGoldFever = false; 
+                    fx.push({ x: o.x, y: o.y, img: imgs.effect, life: 60, follow: false, vy: -5, isEffect: true }); 
+                }
                 objects.splice(i, 1);
             }
         });
+
         clouds.forEach(c => { c.y -= c.speed; c.x -= pDir * c.speed * 0.3; });
         fx.forEach((f, i) => { f.life--; if(f.life <= 0) { fx.splice(i, 1); return; } if(!f.follow) { f.x -= pDir * 11.5; f.y -= GLOBAL_SPEED; } f.y += f.vy || 0; });
-        if(hitShakeFrame > 0) hitShakeFrame--; draw(); requestAnimationFrame(loop);
+        if(hitShakeFrame > 0) hitShakeFrame--; 
+        draw(); 
+        requestAnimationFrame(loop);
     }
 
     function draw() {
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
         ctx.fillStyle = '#BBE5FF'; ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        
         clouds.forEach(c => { if(c.img.complete) { ctx.save(); ctx.globalAlpha = c.alpha; ctx.drawImage(c.img, c.x - (c.img.width*c.scale*2), c.y, c.img.width*c.scale*4, c.img.height*c.scale*4); ctx.restore(); } });
+        
         ctx.save();
         if(dist < 150) {
             if(imgs.mountain.complete) { const mW = imgs.mountain.width * 0.82, mH = imgs.mountain.height * 0.82; for(let x = -3; x <= 3; x++) ctx.drawImage(imgs.mountain, ((mountainX * 1.0) % mW) + (x * mW), landY - mH, mW, mH); }
             if(imgs.grass.complete) { ctx.fillStyle = '#71C8AD'; ctx.fillRect(0, landY, WIDTH, HEIGHT); for(let x = -2; x <= 2; x++) ctx.drawImage(imgs.grass, ((grassX * 1.0) % WIDTH) + (x * WIDTH), landY, WIDTH, imgs.grass.height); }
             if(imgs.target.complete) { const tW = imgs.target.width || 240, tH = imgs.target.height || 96; ctx.drawImage(imgs.target, pX - tW, landY + 180, tW * 2, tH * 2); }
         }
-        ctx.restore();
+
         if(state === 'PLAY' && windAlphaBase > 0) {
             let imgNormal, imgMove; if(pDir === 1) { imgNormal = imgs.windR; imgMove = imgs.windR_move; } else { imgNormal = imgs.windL; imgMove = imgs.windL_move; }
             if(imgNormal.complete && imgMove.complete) { ctx.save(); const s = 205; const baseX = WIDTH / 2 - s, baseY = 110 * 2; ctx.globalAlpha = windAlphaBase; ctx.drawImage(imgNormal, baseX, baseY, s * 2, s * 2); ctx.globalAlpha = windAlphaBase * (0.4 + Math.sin(frame * 0.25) * 0.4); ctx.drawImage(imgMove, baseX, baseY, s * 2, s * 2); ctx.restore(); }
         }
+
         objects.forEach(o => { 
             if(o.img.complete) { 
                 ctx.save(); 
-                if(o.type === 'CRATE') { 
-                    ctx.translate(o.x, o.y - (o.img.height/2)); 
-                    ctx.rotate(Math.sin(frame * 0.13 + o.y * 0.005) * 0.2); 
-                    ctx.drawImage(o.img, -o.img.width/2, 0, o.img.width, o.img.height); 
-                } else if(o.type === 'BAD') {
-                    ctx.translate(o.x, o.y); 
-                    if(o.flipped) ctx.scale(-1, 1); 
-                    ctx.drawImage(o.img, -o.img.width/2, -o.img.height/2, o.img.width, o.img.height); 
-                } else {
-                    ctx.translate(o.x, o.y);
-                    ctx.drawImage(o.img, -o.img.width, -o.img.height, o.img.width * 2, o.img.height * 2);
-                }
+                if(o.type === 'CRATE') { ctx.translate(o.x, o.y - (o.img.height/2)); ctx.rotate(Math.sin(frame * 0.13 + o.y * 0.005) * 0.2); ctx.drawImage(o.img, -o.img.width/2, 0, o.img.width, o.img.height); } 
+                else if(o.type === 'BAD') { ctx.translate(o.x, o.y); if(o.flipped) ctx.scale(-1, 1); ctx.drawImage(o.img, -o.img.width/2, -o.img.height/2, o.img.width, o.img.height); } 
+                else { ctx.translate(o.x, o.y); ctx.drawImage(o.img, -o.img.width, -o.img.height, o.img.width * 2, o.img.height * 2); }
                 ctx.restore(); 
             } 
         });
-        ctx.save(); let sX = (hitShakeFrame > 0) ? (Math.random() - 0.5) * 25 : 0; ctx.translate(pX + sX, pY + Math.sin(frame*0.08)*7.5); ctx.rotate(currentRotation); 
+
+        ctx.save(); 
+        let sX = (hitShakeFrame > 0) ? (Math.random() - 0.5) * 25 : 0; 
+        ctx.translate(pX + sX, pY + Math.sin(frame*0.08)*7.5); 
+        ctx.rotate(currentRotation); 
+        
         let pImg = (faceTimer > 0) ? (currentFace === 'happy' ? imgs.face_happy : imgs.face_miss) : imgs.player;
-        if(faceTimer > 0) faceTimer--; if(pImg.complete) ctx.drawImage(pImg, -pImg.width, -pImg.height, pImg.width * 2, pImg.height * 2); ctx.restore();
+        if(faceTimer > 0) faceTimer--; 
+        if(pImg.complete) ctx.drawImage(pImg, -pImg.width, -pImg.height, pImg.width * 2, pImg.height * 2); 
+        ctx.restore();
+
         fx.forEach(f => { if(f.img.complete) { ctx.save(); ctx.globalAlpha = Math.min(1, f.life / 20); if(f.isEffect) { ctx.drawImage(f.img, f.x - f.img.width / 2, f.y - f.img.height / 2, f.img.width, f.img.height); } else { ctx.drawImage(f.img, f.x - f.img.width, f.y - f.img.height, f.img.width * 2, f.img.height * 2); } ctx.restore(); } });
         comboParticles.forEach(p => { ctx.fillStyle = '#FFEF6B'; ctx.globalAlpha = p.life / 30; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); });
         ctx.restore(); 
+
         if(combo > 1 || isGoldFever) {
             ctx.save(); const comboX = 250 * 2, comboY = (150 * 2) + 32; ctx.translate(comboX, comboY); ctx.scale(popScale, popScale); ctx.translate(-comboX, -comboY); ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.lineJoin = 'round'; ctx.lineWidth = 10; ctx.filter = 'blur(0.5px)'; ctx.strokeStyle = '#FFFFFF'; ctx.fillStyle = (combo >= 20) ? '#A45AE4' : '#5094F9'; ctx.font = '700 80px "Tomorrow"'; ctx.strokeText(combo, comboX, comboY); ctx.fillText(combo, comboX, comboY); ctx.font = '700 32px "Pretendard"'; ctx.strokeText((combo >= 20) ? 'COMBO x2' : 'COMBO', comboX, comboY + 80); ctx.fillText((combo >= 20) ? 'COMBO x2' : 'COMBO', comboX, comboY + 80); ctx.filter = 'none'; ctx.restore();
         }
