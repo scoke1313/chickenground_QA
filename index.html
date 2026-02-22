@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.8.5 - Altimeter Precision Update</title>
+    <title>둥둥그라운드 v1.8.5 - Final Stable Altimeter</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -16,16 +16,14 @@
         canvas { display: block; width: 100%; height: 100%; outline: none; -webkit-tap-highlight-color: transparent; }
         #hud { position: absolute; top: 0; left: 0; width: 100%; z-index: 50; display: none; pointer-events: none; }
         .nav-bar img { width: 100%; display: block; }
+        .hud-info { width: 100%; padding: 12px 20px 0; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-start; }
         
-        /* [HUD 위치 조정: 좌측 패딩을 3px로 줄여 전체를 17px 좌측 이동] */
-        .hud-info { width: 100%; padding: 12px 3px 0 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-start; }
-        
-        /* [고도계 정밀 사이즈 및 간격 조정] */
+        /* [HUD 좌측: 고도계 및 거리 숫자 정밀 조정] */
         .hud-left { 
             display: flex; 
             align-items: center; 
-            gap: 4px; /* 마진 6px 감소 (기존 10px -> 4px) */
-            margin-left: -17px; /* 컨테이너 내부에서 한 번 더 좌측 이동 확인용 */
+            gap: 4px; /* 마진 6px 감소 적용된 상태 */
+            margin-left: -17px; /* 전체 17px 좌측 이동 */
         }
         .altimeter-wrap { position: relative; width: 50px; height: 50px; } /* 사이즈 50x50 고정 */
         .alt-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
@@ -40,7 +38,7 @@
         .danger-pulse { animation: extreme-pulse 0.135s infinite alternate ease-in-out; }
         @keyframes extreme-pulse { from { transform: scale(1.0); } to { transform: scale(1.05); } }
         
-        .hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; padding-right: 20px; }
+        .hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
         .ingame-score-bg { background: #fff; height: 41px; width: 120px; padding: 0 12px; border-radius: 30px; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; }
         .ingame-score-bg img { width: 28px; height: 28px; object-fit: contain; }
         .ingame-score-bg span { font-family: "Tomorrow", sans-serif; font-size: 20px; font-weight: 600; color: #000; }
@@ -99,6 +97,7 @@
         if(lifeTextEl) { lifeTextEl.innerText = 'x' + lives; }
     }
 
+    /* 고도계 바늘 회전 - JS에서 CSS transform만 제어 (캔버스 영향 없음) */
     function updateAltimeter(currentDist) {
         const niddle = document.getElementById('alt-niddle');
         if (!niddle) return;
@@ -107,7 +106,7 @@
         niddle.style.transform = `rotate(${angle}deg)`;
     }
 
-    /* --- [완벽 보존] 렌더링 엔진 로직 수정 없음 --- */
+    /* --- [안정성 보장] 춘식이 투명화 방지 롤백 엔진 --- */
     let riveInstance = null;
     function initRive() {
         riveInstance = new rive.Rive({
@@ -284,9 +283,18 @@
         objects.forEach(o => { 
             if(o.img.complete) { 
                 ctx.save(); 
-                if(o.type === 'CRATE') { ctx.translate(o.x, o.y - (o.img.height/2)); ctx.rotate(Math.sin(frame * 0.13 + o.y * 0.005) * 0.2); ctx.drawImage(o.img, -o.img.width/2, 0, o.img.width, o.img.height); } 
-                else if(o.type === 'BAD') { ctx.translate(o.x, o.y); if(o.flipped) ctx.scale(-1, 1); ctx.drawImage(o.img, -o.img.width/2, -o.img.height/2, o.img.width, o.img.height); } 
-                else { ctx.translate(o.x, o.y); ctx.drawImage(o.img, -o.img.width, -o.img.height, o.img.width * 2, o.img.height * 2); }
+                if(o.type === 'CRATE') { 
+                    ctx.translate(o.x, o.y - (o.img.height/2)); 
+                    ctx.rotate(Math.sin(frame * 0.13 + o.y * 0.005) * 0.2); 
+                    ctx.drawImage(o.img, -o.img.width/2, 0, o.img.width, o.img.height); 
+                } else if(o.type === 'BAD') {
+                    ctx.translate(o.x, o.y); 
+                    if(o.flipped) ctx.scale(-1, 1); 
+                    ctx.drawImage(o.img, -o.img.width/2, -o.img.height/2, o.img.width, o.img.height); 
+                } else {
+                    ctx.translate(o.x, o.y);
+                    ctx.drawImage(o.img, -o.img.width, -o.img.height, o.img.width * 2, o.img.height * 2);
+                }
                 ctx.restore(); 
             } 
         });
