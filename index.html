@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.9.3 - Final UI & Bug Fix</title>
+    <title>둥둥그라운드 v1.9.4 - Final Layout & BG Update</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -47,8 +47,8 @@
             flex-direction:column; justify-content:center; align-items:center; color:white; text-align:center; 
         }
         
-        /* 텍스트 묶음 하단으로 80px 이동 (-120px -> -40px) */
-        .result-content-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: -40px; }
+        /* 텍스트 그룹 전체를 하단으로 80px 추가 이동 (-40px -> 40px) */
+        .result-content-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 40px; }
         .btn-group { position: absolute; bottom: 60px; left: 24px; right: 24px; display: flex; gap: 12px; }
     </style>
 </head>
@@ -89,9 +89,9 @@
         <div class="result-content-wrap">
             <h1 id="result-title" style="font-size: 46px; font-weight: 700; margin-bottom: 12px; margin-top: 0;">작전 성공!</h1>
             <p id="result-desc" style="font-size: 20px; font-weight: 600; margin: 0 0 30px 0;">
-                보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 32px; font-weight: 700;">0</span>개 획득 했어요
+                보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 30px; font-weight: 700;">0</span>개 획득 했어요
             </p>
-            <img id="result-img" src="result_complete.png" style="width: 210px; height: 210px; object-fit: contain; margin-top: 120px;">
+            <img id="result-img" src="result_complete.png" style="width: 210px; height: 210px; object-fit: contain; margin-top: 140px;">
         </div>
         
         <div class="btn-group">
@@ -219,19 +219,19 @@
         
         document.getElementById('result-title').innerText = title;
 
-        if (title.includes("실패")) {
-            // 실패 시 성공 배경 이미지를 강제로 지우고 단색 딤드 처리
-            resultScreen.style.background = 'none'; 
-            resultScreen.style.backgroundColor = 'rgba(51, 63, 86, 0.9)'; 
+        if (title === "실패") {
+            // 실패 시 딤드 제거, 실패 전용 BG 이미지 노출
+            resultScreen.style.background = "url('bg_incomplete.png') no-repeat center center / cover"; 
             resultScreen.style.color = '#FFFFFF';
             descEl.innerHTML = "다시 도전해볼까요?";
             imgEl.src = "result_incomplete.png";
             hud.style.zIndex = '50';
         } else {
-            // 성공 시 이미지 배경 노출
+            // 성공 시 성공 전용 BG 이미지 노출
             resultScreen.style.background = "url('bg_complete.png') no-repeat center center / cover"; 
             resultScreen.style.color = '#111111';
-            descEl.innerHTML = `보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 32px; font-weight: 700;">${score}</span>개 획득 했어요`;
+            // 보급품 개수 폰트 30px 적용
+            descEl.innerHTML = `보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 30px; font-weight: 700;">${score}</span>개 획득 했어요`;
             imgEl.src = "result_complete.png";
             hud.style.zIndex = '250'; 
         }
@@ -335,7 +335,7 @@
                     playSound('hit'); lives--; score = Math.max(0, score - 10); combo = 0; comboTimer = 0; isGoldFever = false; 
                     updateLifeUI(); hitShakeFrame = 10; currentFace = 'miss'; faceTimer = 78; 
                     fx.push({ x: pX + 70, y: pY + 20, img: imgs.damage, life: 60, follow: true, vy: -4.2, isEffect: false }); 
-                    if(lives <= 0) setTimeout(() => gameOver("작전 실패"), 500);
+                    if(lives <= 0) setTimeout(() => gameOver("실패"), 500); // 텍스트 '실패'로 수정
                 } else if(o.type === 'GOLD') triggerGoldFever();
                 else { 
                     playSound('item'); score += (combo >= 20) ? 2 : 1; addCombo(); 
