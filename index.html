@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.9.2 - UI Pixel Perfect</title>
+    <title>둥둥그라운드 v1.9.3 - Final UI & Bug Fix</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -26,10 +26,7 @@
         #alt-niddle { transform-origin: center; transform: rotate(0deg); }
 
         .dist-val-wrap { font-family: "Tomorrow", sans-serif; font-size: 32px; font-weight: 600; color: #000; letter-spacing: -1px; line-height: 1; display: flex; align-items: baseline; }
-        
-        /* 숫자 위치 2px 하단으로 (-3px -> -1px) */
         #dist-val { position: relative; top: -1px; }
-        /* m 폰트 1단계(20px) 키우고 상단으로 1px 이동 */
         .dist-unit { font-family: 'Pretendard', sans-serif; font-size: 20px; font-weight: 700; margin-left: 2px; color: inherit; position: relative; top: -1px; }
 
         #altitude-area.is-danger .dist-val-wrap, #altitude-area.is-danger #dist-val, #altitude-area.is-danger .dist-unit { color: #D4574B !important; }
@@ -50,7 +47,8 @@
             flex-direction:column; justify-content:center; align-items:center; color:white; text-align:center; 
         }
         
-        .result-content-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: -120px; }
+        /* 텍스트 묶음 하단으로 80px 이동 (-120px -> -40px) */
+        .result-content-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: -40px; }
         .btn-group { position: absolute; bottom: 60px; left: 24px; right: 24px; display: flex; gap: 12px; }
     </style>
 </head>
@@ -89,13 +87,11 @@
 
     <div id="result-screen">
         <div class="result-content-wrap">
-            <h1 id="result-title" style="font-size: 46px; font-weight: 700; margin-bottom: 12px; margin-top: 0;">작전 완료!</h1>
-            
+            <h1 id="result-title" style="font-size: 46px; font-weight: 700; margin-bottom: 12px; margin-top: 0;">작전 성공!</h1>
             <p id="result-desc" style="font-size: 20px; font-weight: 600; margin: 0 0 30px 0;">
                 보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 32px; font-weight: 700;">0</span>개 획득 했어요
             </p>
-            
-            <img id="result-img" src="result_complete.png" style="width: 210px; height: 210px; object-fit: contain; margin-top: 60px;">
+            <img id="result-img" src="result_complete.png" style="width: 210px; height: 210px; object-fit: contain; margin-top: 120px;">
         </div>
         
         <div class="btn-group">
@@ -223,13 +219,16 @@
         
         document.getElementById('result-title').innerText = title;
 
-        if (title.includes("작전실패")) {
-            resultScreen.style.background = 'rgba(51, 63, 86, 0.9)'; 
+        if (title.includes("실패")) {
+            // 실패 시 성공 배경 이미지를 강제로 지우고 단색 딤드 처리
+            resultScreen.style.background = 'none'; 
+            resultScreen.style.backgroundColor = 'rgba(51, 63, 86, 0.9)'; 
             resultScreen.style.color = '#FFFFFF';
             descEl.innerHTML = "다시 도전해볼까요?";
             imgEl.src = "result_incomplete.png";
             hud.style.zIndex = '50';
         } else {
+            // 성공 시 이미지 배경 노출
             resultScreen.style.background = "url('bg_complete.png') no-repeat center center / cover"; 
             resultScreen.style.color = '#111111';
             descEl.innerHTML = `보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 32px; font-weight: 700;">${score}</span>개 획득 했어요`;
@@ -323,7 +322,7 @@
             if(landY > targetArrivalY) landY -= GLOBAL_SPEED; 
             else { 
                 landY = targetArrivalY; 
-                if(dist <= 5) { dist = 0; state = 'LANDED'; setTimeout(() => gameOver("작전성공!"), 500); } 
+                if(dist <= 5) { dist = 0; state = 'LANDED'; setTimeout(() => gameOver("작전 성공!"), 500); } 
             } 
             stopSpawning = true; 
         }
