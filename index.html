@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.9.0 - UI Layout Complete</title>
+    <title>둥둥그라운드 v1.9.1 - Game Flow & Detail Fix</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -15,7 +15,6 @@
         #rive-canvas { position: absolute; top: 0; left: 0; width: 393px; height: 852px; pointer-events: none; z-index: 105; }
         canvas { display: block; width: 100%; height: 100%; outline: none; -webkit-tap-highlight-color: transparent; }
         
-        /* 기본 HUD의 z-index는 50 (실패 시 딤드 뒤로 감) */
         #hud { position: absolute; top: 0; left: 0; width: 100%; z-index: 50; display: none; pointer-events: none; }
         .nav-bar img { width: 100%; display: block; }
         
@@ -48,17 +47,8 @@
             flex-direction:column; justify-content:center; align-items:center; color:white; text-align:center; 
         }
         
-        /* 텍스트/이미지 그룹을 기존 대비 80px 더 위로 올림 */
-        .result-content-wrap {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            margin-top: -120px; 
-        }
-        
-        /* 투 버튼 컨테이너 */
-        .btn-group {
-            position: absolute; bottom: 60px; left: 24px; right: 24px;
-            display: flex; gap: 12px;
-        }
+        .result-content-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: -120px; }
+        .btn-group { position: absolute; bottom: 60px; left: 24px; right: 24px; display: flex; gap: 12px; }
     </style>
 </head>
 <body>
@@ -97,17 +87,15 @@
     <div id="result-screen">
         <div class="result-content-wrap">
             <h1 id="result-title" style="font-size: 42px; font-weight: 700; margin-bottom: 12px; margin-top: 0;">작전 완료!</h1>
-            
             <p id="result-desc" style="font-size: 22px; margin: 0 0 30px 0;">
                 보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 32px; font-weight: 700;">0</span>개 획득 했어요
             </p>
-            
             <img id="result-img" src="result_complete.png" style="width: 154px; height: 154px; object-fit: contain;">
         </div>
         
         <div class="btn-group">
-            <button onclick="location.reload()" style="flex: 1; height: 64px; background-color: #293257; color: #ffffff; font-size: 18px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; font-family: 'Pretendard', sans-serif;">메인</button>
-            <button onclick="location.reload()" style="flex: 1; height: 64px; background-color: #FFDB29; color: #111111; font-size: 18px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; font-family: 'Pretendard', sans-serif;">재도전</button>
+            <button onclick="goToMain()" style="flex: 1; height: 64px; background-color: #293257; color: #ffffff; font-size: 18px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; font-family: 'Pretendard', sans-serif;">메인</button>
+            <button onclick="retryGame()" style="flex: 1; height: 64px; background-color: #FFDB29; color: #111111; font-size: 18px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; font-family: 'Pretendard', sans-serif;">재도전</button>
         </div>
     </div>
 </div>
@@ -165,7 +153,10 @@
     let state = 'MAIN', frame = 0, dist = 1500, score = 0, lives = 3;
     let combo = 0, comboTimer = 0, popScale = 1.0, isGoldFever = false;
     let comboParticles = []; let windTimer = 0, windAlphaBase = 0;
-    const pX = WIDTH / 2, pY = HEIGHT * 0.28;
+    
+    // 캐릭터 Y 위치 50px(캔버스 기준 100px) 아래로 이동
+    const pX = WIDTH / 2, pY = (HEIGHT * 0.28) + 100;
+    
     let pDir = 1, objects = [], clouds = [], fx = [];
     let stopSpawning = false, mountainX = 0, grassX = 0, hitShakeFrame = 0;
     let faceTimer = 0, currentFace = 'normal', currentRotation = 0, rotVel = 0;
@@ -220,7 +211,6 @@
         objects = [];
     }
 
-    // 변경된 로직: 배경 딤드 85%, 성공 시 HUD 노출
     function gameOver(title) {
         state = 'END'; 
         const resultScreen = document.getElementById('result-screen');
@@ -231,14 +221,13 @@
         document.getElementById('result-title').innerText = title;
 
         if (title.includes("실패")) {
-            // 실패 시 85% 딤드 처리 및 HUD 숨김(뒤로 보냄)
-            resultScreen.style.background = 'rgba(59, 69, 89, 0.85)'; 
+            // 실패 시 컬러 #333F56(rgb 51, 63, 86) / 투명도 90%
+            resultScreen.style.background = 'rgba(51, 63, 86, 0.9)'; 
             resultScreen.style.color = '#FFFFFF';
             descEl.innerHTML = "다시 도전해볼까요?";
             imgEl.src = "result_incomplete.png";
             hud.style.zIndex = '50';
         } else {
-            // 성공 시 꽉 찬 배경 및 HUD 상위 노출
             resultScreen.style.background = "url('bg_complete.png') no-repeat center center / cover"; 
             resultScreen.style.color = '#111111';
             descEl.innerHTML = `보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 32px; font-weight: 700;">${score}</span>개 획득 했어요`;
@@ -247,6 +236,36 @@
         }
 
         resultScreen.style.display = 'flex';
+    }
+
+    // 메인으로 가기 버튼 (새로고침)
+    function goToMain() {
+        location.reload();
+    }
+
+    // 재도전 버튼 (상태 즉시 초기화 후 재시작)
+    function retryGame() {
+        document.getElementById('result-screen').style.display = 'none';
+        
+        // 게임 변수 리셋
+        dist = 1500; score = 0; lives = 3; combo = 0; comboTimer = 0; popScale = 1.0; isGoldFever = false;
+        comboParticles = []; windTimer = 0; windAlphaBase = 0;
+        pDir = 1; objects = []; clouds = []; fx = [];
+        stopSpawning = false; mountainX = 0; grassX = 0; hitShakeFrame = 0;
+        faceTimer = 0; currentFace = 'normal'; currentRotation = 0; rotVel = 0;
+        landY = HEIGHT + 1000; spawnDeck = [];
+        
+        // UI 리셋
+        updateLifeUI();
+        document.getElementById('dist-val').innerText = '1500';
+        document.getElementById('score-val').innerText = '0';
+        updateAltimeter(1500);
+        document.getElementById('hud').style.zIndex = '50';
+        
+        // 즉시 플레이 상태 돌입
+        state = 'PLAY';
+        for(let j=0; j<5; j++) spawnCloud(Math.random() * HEIGHT);
+        loop(); 
     }
 
     function forceStart() {
@@ -264,7 +283,7 @@
         if (e.code === 'Space') {
             if (state === 'MAIN') forceStart();
             else if (state === 'PLAY') { pDir *= -1; windTimer = 0; windAlphaBase = 0; }
-            else if (state === 'END') location.reload();
+            else if (state === 'END') retryGame(); // END 상태일 때 스페이스바 누르면 즉시 재도전
         }
     });
 
@@ -347,7 +366,8 @@
         ctx.save();
         if(dist < 150) {
             if(imgs.mountain.complete) { const mW = imgs.mountain.width * 0.82, mH = imgs.mountain.height * 0.82; for(let x = -3; x <= 3; x++) ctx.drawImage(imgs.mountain, ((mountainX * 1.0) % mW) + (x * mW), landY - mH, mW, mH); }
-            if(imgs.grass.complete) { ctx.fillStyle = '#71C8AD'; ctx.fillRect(0, landY, WIDTH, HEIGHT); for(let x = -2; x <= 2; x++) ctx.drawImage(imgs.grass, ((grassX * 1.0) % WIDTH) + (x * WIDTH), landY, WIDTH, imgs.grass.height); }
+            // 변경된 잔디 컬러 적용 (#5EC368)
+            if(imgs.grass.complete) { ctx.fillStyle = '#5EC368'; ctx.fillRect(0, landY, WIDTH, HEIGHT); for(let x = -2; x <= 2; x++) ctx.drawImage(imgs.grass, ((grassX * 1.0) % WIDTH) + (x * WIDTH), landY, WIDTH, imgs.grass.height); }
             if(imgs.target.complete) { const tW = imgs.target.width || 240, tH = imgs.target.height || 96; ctx.drawImage(imgs.target, pX - tW, landY + 180, tW * 2, tH * 2); }
         }
 
