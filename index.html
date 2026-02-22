@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.9.4 - Final Layout & BG Update</title>
+    <title>둥둥그라운드 v1.9.6 - Layout Pixel Perfect</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -15,6 +15,14 @@
         #rive-canvas { position: absolute; top: 0; left: 0; width: 393px; height: 852px; pointer-events: none; z-index: 105; }
         canvas { display: block; width: 100%; height: 100%; outline: none; -webkit-tap-highlight-color: transparent; }
         
+        #loading-text {
+            position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
+            font-size: 20px; font-weight: 700; color: #333; z-index: 110;
+            animation: pulse 1s infinite alternate;
+        }
+        @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
+        #start-btn { display: none; position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%); width: 85%; cursor: pointer; z-index: 110; }
+
         #hud { position: absolute; top: 0; left: 0; width: 100%; z-index: 50; display: none; pointer-events: none; }
         .nav-bar img { width: 100%; display: block; }
         
@@ -47,8 +55,8 @@
             flex-direction:column; justify-content:center; align-items:center; color:white; text-align:center; 
         }
         
-        /* 텍스트 그룹 전체를 하단으로 80px 추가 이동 (-40px -> 40px) */
-        .result-content-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 40px; }
+        /* 텍스트 묶음을 40px 더 내림 (margin-top: 40px -> 80px) */
+        .result-content-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 80px; }
         .btn-group { position: absolute; bottom: 60px; left: 24px; right: 24px; display: flex; gap: 12px; }
     </style>
 </head>
@@ -57,7 +65,8 @@
 <div id="game-container">
     <div id="main-screen">
         <canvas id="rive-canvas"></canvas>
-        <img src="btn_start.svg" id="start-btn" style="position:absolute; bottom:8%; left:50%; transform:translateX(-50%); width:85%; cursor:pointer; z-index: 110;" onclick="forceStart()">
+        <div id="loading-text">로딩 중...</div>
+        <img src="btn_start.svg" id="start-btn" onclick="forceStart()">
     </div>
 
     <div id="hud">
@@ -91,7 +100,7 @@
             <p id="result-desc" style="font-size: 20px; font-weight: 600; margin: 0 0 30px 0;">
                 보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 30px; font-weight: 700;">0</span>개 획득 했어요
             </p>
-            <img id="result-img" src="result_complete.png" style="width: 210px; height: 210px; object-fit: contain; margin-top: 140px;">
+            <img id="result-img" src="result_complete.png" style="width: 210px; height: 210px; object-fit: contain; margin-top: 70px;">
         </div>
         
         <div class="btn-group">
@@ -102,6 +111,29 @@
 </div>
 
 <script>
+    const imgList = ['player', 'dong_chun.svg', 'face_happy', 'dong_chun_happy.svg', 'face_miss', 'dong_chun_miss.svg', 'crate', 'create_m.png', 'gold', 'gold.svg', 'heli', 'heli.png', 'cloud1', 'cloud_1.svg', 'cloud2', 'cloud_2.svg', 'cloud3', 'cloud_3.svg', 'land', '03_ingame_land.png', 'effect', 'effect_pickup.png', 'damage', 'damege.svg', 'mountain', 'surface_mountain.png', 'grass', 'surface_grass.png', 'target', 'surface_target.svg', 'windL', 'wind_L.svg', 'windR', 'wind_R.svg', 'windL_move', 'wind_L_move.svg', 'windR_move', 'wind_R_move.svg'];
+    const imgs = {};
+    
+    let isRiveLoaded = false;
+    let imagesLoadedCount = 0;
+    const totalImagesToLoad = imgList.length / 2;
+
+    function checkAllLoaded() {
+        if (isRiveLoaded && imagesLoadedCount >= totalImagesToLoad) {
+            document.getElementById('loading-text').style.display = 'none';
+            document.getElementById('start-btn').style.display = 'block';
+        }
+    }
+
+    imgList.forEach((val, i) => { 
+        if(i % 2 === 0) { 
+            imgs[val] = new Image(); 
+            imgs[val].onload = () => { imagesLoadedCount++; checkAllLoaded(); };
+            imgs[val].onerror = () => { imagesLoadedCount++; checkAllLoaded(); };
+            imgs[val].src = imgList[i+1]; 
+        } 
+    });
+
     let riveInstance = null;
     function initRive() {
         riveInstance = new rive.Rive({
@@ -110,7 +142,11 @@
             autoplay: true,
             stateMachines: 'State Machine 1', 
             layout: new rive.Layout({ fit: rive.Fit.Cover, alignment: rive.Alignment.Center }),
-            onLoad: () => { riveInstance.resizeDrawingSurfaceToCanvas(); },
+            onLoad: () => { 
+                riveInstance.resizeDrawingSurfaceToCanvas(); 
+                isRiveLoaded = true;
+                checkAllLoaded(); 
+            },
         });
     }
     window.addEventListener('load', initRive);
@@ -147,9 +183,6 @@
     const WIDTH = 393 * 2, HEIGHT = 852 * 2; 
     canvas.width = WIDTH; canvas.height = HEIGHT;
     const ctx = canvas.getContext('2d');
-    const imgs = {};
-    const imgList = ['player', 'dong_chun.svg', 'face_happy', 'dong_chun_happy.svg', 'face_miss', 'dong_chun_miss.svg', 'crate', 'create_m.png', 'gold', 'gold.svg', 'heli', 'heli.png', 'cloud1', 'cloud_1.svg', 'cloud2', 'cloud_2.svg', 'cloud3', 'cloud_3.svg', 'land', '03_ingame_land.png', 'effect', 'effect_pickup.png', 'damage', 'damege.svg', 'mountain', 'surface_mountain.png', 'grass', 'surface_grass.png', 'target', 'surface_target.svg', 'windL', 'wind_L.svg', 'windR', 'wind_R.svg', 'windL_move', 'wind_L_move.svg', 'windR_move', 'wind_R_move.svg'];
-    imgList.forEach((val, i) => { if(i % 2 === 0) { imgs[val] = new Image(); imgs[val].src = imgList[i+1]; } });
 
     let state = 'MAIN', frame = 0, dist = 1500, score = 0, lives = 3;
     let combo = 0, comboTimer = 0, popScale = 1.0, isGoldFever = false;
@@ -220,17 +253,14 @@
         document.getElementById('result-title').innerText = title;
 
         if (title === "실패") {
-            // 실패 시 딤드 제거, 실패 전용 BG 이미지 노출
             resultScreen.style.background = "url('bg_incomplete.png') no-repeat center center / cover"; 
             resultScreen.style.color = '#FFFFFF';
             descEl.innerHTML = "다시 도전해볼까요?";
             imgEl.src = "result_incomplete.png";
             hud.style.zIndex = '50';
         } else {
-            // 성공 시 성공 전용 BG 이미지 노출
             resultScreen.style.background = "url('bg_complete.png') no-repeat center center / cover"; 
             resultScreen.style.color = '#111111';
-            // 보급품 개수 폰트 30px 적용
             descEl.innerHTML = `보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 30px; font-weight: 700;">${score}</span>개 획득 했어요`;
             imgEl.src = "result_complete.png";
             hud.style.zIndex = '250'; 
@@ -335,7 +365,7 @@
                     playSound('hit'); lives--; score = Math.max(0, score - 10); combo = 0; comboTimer = 0; isGoldFever = false; 
                     updateLifeUI(); hitShakeFrame = 10; currentFace = 'miss'; faceTimer = 78; 
                     fx.push({ x: pX + 70, y: pY + 20, img: imgs.damage, life: 60, follow: true, vy: -4.2, isEffect: false }); 
-                    if(lives <= 0) setTimeout(() => gameOver("실패"), 500); // 텍스트 '실패'로 수정
+                    if(lives <= 0) setTimeout(() => gameOver("실패"), 500);
                 } else if(o.type === 'GOLD') triggerGoldFever();
                 else { 
                     playSound('item'); score += (combo >= 20) ? 2 : 1; addCombo(); 
