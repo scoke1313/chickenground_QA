@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.8.9 - Result UI Detail Up</title>
+    <title>둥둥그라운드 v1.9.0 - UI Layout Complete</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -14,23 +14,20 @@
         #main-screen { position: absolute; inset: 0; background: url('bg_main.png') no-repeat center center / cover; z-index: 100; }
         #rive-canvas { position: absolute; top: 0; left: 0; width: 393px; height: 852px; pointer-events: none; z-index: 105; }
         canvas { display: block; width: 100%; height: 100%; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        /* 기본 HUD의 z-index는 50 (실패 시 딤드 뒤로 감) */
         #hud { position: absolute; top: 0; left: 0; width: 100%; z-index: 50; display: none; pointer-events: none; }
         .nav-bar img { width: 100%; display: block; }
         
         .hud-info { width: 100%; padding: 12px 20px 0; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-start; }
-        
         .hud-left { display: flex; align-items: center; gap: 4px; margin-left: -17px; margin-top: -2px; }
         
         .altimeter-wrap { position: relative; width: 50px; height: 50px; } 
         .alt-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
         #alt-niddle { transform-origin: center; transform: rotate(0deg); }
 
-        .dist-val-wrap { 
-            font-family: "Tomorrow", sans-serif; font-size: 32px; font-weight: 600; color: #000; letter-spacing: -1px; line-height: 1; display: flex; align-items: baseline; 
-        }
-        
+        .dist-val-wrap { font-family: "Tomorrow", sans-serif; font-size: 32px; font-weight: 600; color: #000; letter-spacing: -1px; line-height: 1; display: flex; align-items: baseline; }
         #dist-val { position: relative; top: -3px; }
-        
         .dist-unit { font-family: 'Pretendard', sans-serif; font-size: 18px; font-weight: 700; margin-left: 2px; color: inherit; }
 
         #altitude-area.is-danger .dist-val-wrap, #altitude-area.is-danger #dist-val, #altitude-area.is-danger .dist-unit { color: #D4574B !important; }
@@ -51,10 +48,16 @@
             flex-direction:column; justify-content:center; align-items:center; color:white; text-align:center; 
         }
         
-        /* 결과창 텍스트/이미지 그룹을 버튼과 분리하여 화면 중앙에 배치 */
+        /* 텍스트/이미지 그룹을 기존 대비 80px 더 위로 올림 */
         .result-content-wrap {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            margin-top: -40px; /* 버튼 공간만큼 살짝 위로 올려서 밸런스 조정 */
+            margin-top: -120px; 
+        }
+        
+        /* 투 버튼 컨테이너 */
+        .btn-group {
+            position: absolute; bottom: 60px; left: 24px; right: 24px;
+            display: flex; gap: 12px;
         }
     </style>
 </head>
@@ -94,14 +97,18 @@
     <div id="result-screen">
         <div class="result-content-wrap">
             <h1 id="result-title" style="font-size: 42px; font-weight: 700; margin-bottom: 12px; margin-top: 0;">작전 완료!</h1>
-            <p id="result-desc" style="font-size: 18px; margin: 0 0 30px 0;">
-                보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 28px; font-weight: 700;">0</span>개 획득 했어요
+            
+            <p id="result-desc" style="font-size: 22px; margin: 0 0 30px 0;">
+                보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 32px; font-weight: 700;">0</span>개 획득 했어요
             </p>
             
-            <img id="result-img" src="result_complete.png" style="width: 154px; height: auto; object-fit: contain;">
+            <img id="result-img" src="result_complete.png" style="width: 154px; height: 154px; object-fit: contain;">
         </div>
         
-        <button id="retry-btn" onclick="location.reload()" style="position: absolute; bottom: 60px; left: 24px; width: calc(100% - 48px); height: 64px; background-color: #FFDB29; color: #111; font-size: 18px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; font-family: 'Pretendard', sans-serif;">재도전</button>
+        <div class="btn-group">
+            <button onclick="location.reload()" style="flex: 1; height: 64px; background-color: #293257; color: #ffffff; font-size: 18px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; font-family: 'Pretendard', sans-serif;">메인</button>
+            <button onclick="location.reload()" style="flex: 1; height: 64px; background-color: #FFDB29; color: #111111; font-size: 18px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; font-family: 'Pretendard', sans-serif;">재도전</button>
+        </div>
     </div>
 </div>
 
@@ -213,27 +220,30 @@
         objects = [];
     }
 
-    // 배경 분기 및 딤드 처리 적용
+    // 변경된 로직: 배경 딤드 85%, 성공 시 HUD 노출
     function gameOver(title) {
         state = 'END'; 
         const resultScreen = document.getElementById('result-screen');
         const descEl = document.getElementById('result-desc');
         const imgEl = document.getElementById('result-img');
+        const hud = document.getElementById('hud');
         
         document.getElementById('result-title').innerText = title;
 
         if (title.includes("실패")) {
-            // 네이비 계열의 딤드 (투명도 65%)
-            resultScreen.style.background = 'rgba(59, 69, 89, 0.65)'; 
+            // 실패 시 85% 딤드 처리 및 HUD 숨김(뒤로 보냄)
+            resultScreen.style.background = 'rgba(59, 69, 89, 0.85)'; 
             resultScreen.style.color = '#FFFFFF';
             descEl.innerHTML = "다시 도전해볼까요?";
             imgEl.src = "result_incomplete.png";
+            hud.style.zIndex = '50';
         } else {
-            // 성공 전용 bg 이미지 적용
+            // 성공 시 꽉 찬 배경 및 HUD 상위 노출
             resultScreen.style.background = "url('bg_complete.png') no-repeat center center / cover"; 
             resultScreen.style.color = '#111111';
-            descEl.innerHTML = `보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 28px; font-weight: 700;">${score}</span>개 획득 했어요`;
+            descEl.innerHTML = `보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 32px; font-weight: 700;">${score}</span>개 획득 했어요`;
             imgEl.src = "result_complete.png";
+            hud.style.zIndex = '250'; 
         }
 
         resultScreen.style.display = 'flex';
