@@ -270,6 +270,7 @@
             if(imgs.grass.complete) { ctx.fillStyle = '#71C8AD'; ctx.fillRect(0, landY, WIDTH, HEIGHT); for(let x = -2; x <= 2; x++) ctx.drawImage(imgs.grass, ((grassX * 1.0) % WIDTH) + (x * WIDTH), landY, WIDTH, imgs.grass.height); }
             if(imgs.target.complete) { const tW = imgs.target.width || 240, tH = imgs.target.height || 96; ctx.drawImage(imgs.target, pX - tW, landY + 180, tW * 2, tH * 2); }
         }
+        ctx.restore();
         if(state === 'PLAY' && windAlphaBase > 0) {
             let imgNormal, imgMove; if(pDir === 1) { imgNormal = imgs.windR; imgMove = imgs.windR_move; } else { imgNormal = imgs.windL; imgMove = imgs.windL_move; }
             if(imgNormal.complete && imgMove.complete) { ctx.save(); const s = 205; const baseX = WIDTH / 2 - s, baseY = 110 * 2; ctx.globalAlpha = windAlphaBase; ctx.drawImage(imgNormal, baseX, baseY, s * 2, s * 2); ctx.globalAlpha = windAlphaBase * (0.4 + Math.sin(frame * 0.25) * 0.4); ctx.drawImage(imgMove, baseX, baseY, s * 2, s * 2); ctx.restore(); }
@@ -277,9 +278,18 @@
         objects.forEach(o => { 
             if(o.img.complete) { 
                 ctx.save(); 
-                if(o.type === 'CRATE') { ctx.translate(o.x, o.y - (o.img.height/2)); ctx.rotate(Math.sin(frame * 0.13 + o.y * 0.005) * 0.2); ctx.drawImage(o.img, -o.img.width/2, 0, o.img.width, o.img.height); } 
-                else if(o.type === 'BAD') { ctx.translate(o.x, o.y); if(o.flipped) ctx.scale(-1, 1); ctx.drawImage(o.img, -o.img.width/2, -o.img.height/2, o.img.width, o.img.height); } 
-                else { ctx.translate(o.x, o.y); ctx.drawImage(o.img, -o.img.width, -o.img.height, o.img.width * 2, o.img.height * 2); }
+                if(o.type === 'CRATE') { 
+                    ctx.translate(o.x, o.y - (o.img.height/2)); 
+                    ctx.rotate(Math.sin(frame * 0.13 + o.y * 0.005) * 0.2); 
+                    ctx.drawImage(o.img, -o.img.width/2, 0, o.img.width, o.img.height); 
+                } else if(o.type === 'BAD') {
+                    ctx.translate(o.x, o.y); 
+                    if(o.flipped) ctx.scale(-1, 1); 
+                    ctx.drawImage(o.img, -o.img.width/2, -o.img.height/2, o.img.width, o.img.height); 
+                } else {
+                    ctx.translate(o.x, o.y);
+                    ctx.drawImage(o.img, -o.img.width, -o.img.height, o.img.width * 2, o.img.height * 2);
+                }
                 ctx.restore(); 
             } 
         });
