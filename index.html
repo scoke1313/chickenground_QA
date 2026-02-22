@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.9.6 - Layout Pixel Perfect</title>
+    <title>둥둥그라운드 v1.9.8 - Font & Spacing Polish</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -12,7 +12,9 @@
         body { margin: 0; padding: 0; background-color: #333; font-family: 'Pretendard', sans-serif; overflow: hidden; touch-action: none; user-select: none; display: flex; justify-content: center; align-items: center; height: 100vh; }
         #game-container { position: relative; width: 393px; height: 852px; overflow: hidden; background: #BBE5FF; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         #main-screen { position: absolute; inset: 0; background: url('bg_main.png') no-repeat center center / cover; z-index: 100; }
-        #rive-canvas { position: absolute; top: 0; left: 0; width: 393px; height: 852px; pointer-events: none; z-index: 105; }
+        
+        #rive-canvas { position: absolute; top: 0; left: 0; width: 393px; height: 852px; pointer-events: none; z-index: 105; opacity: 0; transition: opacity 0.5s ease-in-out; }
+        
         canvas { display: block; width: 100%; height: 100%; outline: none; -webkit-tap-highlight-color: transparent; }
         
         #loading-text {
@@ -55,7 +57,6 @@
             flex-direction:column; justify-content:center; align-items:center; color:white; text-align:center; 
         }
         
-        /* 텍스트 묶음을 40px 더 내림 (margin-top: 40px -> 80px) */
         .result-content-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 80px; }
         .btn-group { position: absolute; bottom: 60px; left: 24px; right: 24px; display: flex; gap: 12px; }
     </style>
@@ -97,10 +98,12 @@
     <div id="result-screen">
         <div class="result-content-wrap">
             <h1 id="result-title" style="font-size: 46px; font-weight: 700; margin-bottom: 12px; margin-top: 0;">작전 성공!</h1>
-            <p id="result-desc" style="font-size: 20px; font-weight: 600; margin: 0 0 30px 0;">
-                보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 30px; font-weight: 700;">0</span>개 획득 했어요
+            
+            <p id="result-desc" style="font-size: 18px; font-weight: 500; margin: 0 0 30px 0;">
+                보급품 <span id="final-score" style="font-size: 28px; font-weight: 600;">0</span>개 획득 했어요
             </p>
-            <img id="result-img" src="result_complete.png" style="width: 210px; height: 210px; object-fit: contain; margin-top: 70px;">
+            
+            <img id="result-img" src="result_complete.png" style="width: 210px; height: 210px; object-fit: contain; margin-top: 55px;">
         </div>
         
         <div class="btn-group">
@@ -111,7 +114,16 @@
 </div>
 
 <script>
-    const imgList = ['player', 'dong_chun.svg', 'face_happy', 'dong_chun_happy.svg', 'face_miss', 'dong_chun_miss.svg', 'crate', 'create_m.png', 'gold', 'gold.svg', 'heli', 'heli.png', 'cloud1', 'cloud_1.svg', 'cloud2', 'cloud_2.svg', 'cloud3', 'cloud_3.svg', 'land', '03_ingame_land.png', 'effect', 'effect_pickup.png', 'damage', 'damege.svg', 'mountain', 'surface_mountain.png', 'grass', 'surface_grass.png', 'target', 'surface_target.svg', 'windL', 'wind_L.svg', 'windR', 'wind_R.svg', 'windL_move', 'wind_L_move.svg', 'windR_move', 'wind_R_move.svg'];
+    const imgList = [
+        'bg_main', 'bg_main.png', 
+        'btn_start', 'btn_start.svg',
+        'player', 'dong_chun.svg', 'face_happy', 'dong_chun_happy.svg', 'face_miss', 'dong_chun_miss.svg', 
+        'crate', 'create_m.png', 'gold', 'gold.svg', 'heli', 'heli.png', 
+        'cloud1', 'cloud_1.svg', 'cloud2', 'cloud_2.svg', 'cloud3', 'cloud_3.svg', 
+        'land', '03_ingame_land.png', 'effect', 'effect_pickup.png', 'damage', 'damege.svg', 
+        'mountain', 'surface_mountain.png', 'grass', 'surface_grass.png', 'target', 'surface_target.svg', 
+        'windL', 'wind_L.svg', 'windR', 'wind_R.svg', 'windL_move', 'wind_L_move.svg', 'windR_move', 'wind_R_move.svg'
+    ];
     const imgs = {};
     
     let isRiveLoaded = false;
@@ -122,6 +134,7 @@
         if (isRiveLoaded && imagesLoadedCount >= totalImagesToLoad) {
             document.getElementById('loading-text').style.display = 'none';
             document.getElementById('start-btn').style.display = 'block';
+            document.getElementById('rive-canvas').style.opacity = '1';
         }
     }
 
@@ -261,7 +274,8 @@
         } else {
             resultScreen.style.background = "url('bg_complete.png') no-repeat center center / cover"; 
             resultScreen.style.color = '#111111';
-            descEl.innerHTML = `보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 30px; font-weight: 700;">${score}</span>개 획득 했어요`;
+            // 텍스트/숫자 폰트 사이즈 및 굵기 수정, 영문 폰트 제거
+            descEl.innerHTML = `보급품 <span id="final-score" style="font-size: 28px; font-weight: 600;">${score}</span>개 획득 했어요`;
             imgEl.src = "result_complete.png";
             hud.style.zIndex = '250'; 
         }
