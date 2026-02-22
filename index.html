@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.8.5 - Altimeter X2 Fix</title>
+    <title>둥둥그라운드 v1.8.5 - Altimeter Precision Update</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -17,11 +17,17 @@
         #hud { position: absolute; top: 0; left: 0; width: 100%; z-index: 50; display: none; pointer-events: none; }
         .nav-bar img { width: 100%; display: block; }
         
-        .hud-info { width: 100%; padding: 12px 20px 0; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-start; }
+        /* [HUD 위치 조정: 좌측 패딩을 3px로 줄여 전체를 17px 좌측 이동] */
+        .hud-info { width: 100%; padding: 12px 3px 0 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-start; }
         
-        /* [고도계 사이즈 2배 확대 및 레이아웃] */
-        .hud-left { display: flex; align-items: center; gap: 10px; }
-        .altimeter-wrap { position: relative; width: 56px; height: 56px; } /* 28px -> 56px 확대 */
+        /* [고도계 정밀 사이즈 및 간격 조정] */
+        .hud-left { 
+            display: flex; 
+            align-items: center; 
+            gap: 4px; /* 마진 6px 감소 (기존 10px -> 4px) */
+            margin-left: -17px; /* 컨테이너 내부에서 한 번 더 좌측 이동 확인용 */
+        }
+        .altimeter-wrap { position: relative; width: 50px; height: 50px; } /* 사이즈 50x50 고정 */
         .alt-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
         #alt-niddle { transform-origin: center; transform: rotate(0deg); }
 
@@ -34,7 +40,7 @@
         .danger-pulse { animation: extreme-pulse 0.135s infinite alternate ease-in-out; }
         @keyframes extreme-pulse { from { transform: scale(1.0); } to { transform: scale(1.05); } }
         
-        .hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+        .hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; padding-right: 20px; }
         .ingame-score-bg { background: #fff; height: 41px; width: 120px; padding: 0 12px; border-radius: 30px; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; }
         .ingame-score-bg img { width: 28px; height: 28px; object-fit: contain; }
         .ingame-score-bg span { font-family: "Tomorrow", sans-serif; font-size: 20px; font-weight: 600; color: #000; }
@@ -101,7 +107,7 @@
         niddle.style.transform = `rotate(${angle}deg)`;
     }
 
-    /* --- [완벽 복구] 렌더링 및 물리 로직 원본 그대로 유지 --- */
+    /* --- [완벽 보존] 렌더링 엔진 로직 수정 없음 --- */
     let riveInstance = null;
     function initRive() {
         riveInstance = new rive.Rive({
@@ -270,6 +276,7 @@
             if(imgs.grass.complete) { ctx.fillStyle = '#71C8AD'; ctx.fillRect(0, landY, WIDTH, HEIGHT); for(let x = -2; x <= 2; x++) ctx.drawImage(imgs.grass, ((grassX * 1.0) % WIDTH) + (x * WIDTH), landY, WIDTH, imgs.grass.height); }
             if(imgs.target.complete) { const tW = imgs.target.width || 240, tH = imgs.target.height || 96; ctx.drawImage(imgs.target, pX - tW, landY + 180, tW * 2, tH * 2); }
         }
+        ctx.restore();
         if(state === 'PLAY' && windAlphaBase > 0) {
             let imgNormal, imgMove; if(pDir === 1) { imgNormal = imgs.windR; imgMove = imgs.windR_move; } else { imgNormal = imgs.windL; imgMove = imgs.windL_move; }
             if(imgNormal.complete && imgMove.complete) { ctx.save(); const s = 205; const baseX = WIDTH / 2 - s, baseY = 110 * 2; ctx.globalAlpha = windAlphaBase; ctx.drawImage(imgNormal, baseX, baseY, s * 2, s * 2); ctx.globalAlpha = windAlphaBase * (0.4 + Math.sin(frame * 0.25) * 0.4); ctx.drawImage(imgMove, baseX, baseY, s * 2, s * 2); ctx.restore(); }
