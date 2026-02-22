@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.9.1 - Game Flow & Detail Fix</title>
+    <title>둥둥그라운드 v1.9.2 - UI Pixel Perfect</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -26,8 +26,11 @@
         #alt-niddle { transform-origin: center; transform: rotate(0deg); }
 
         .dist-val-wrap { font-family: "Tomorrow", sans-serif; font-size: 32px; font-weight: 600; color: #000; letter-spacing: -1px; line-height: 1; display: flex; align-items: baseline; }
-        #dist-val { position: relative; top: -3px; }
-        .dist-unit { font-family: 'Pretendard', sans-serif; font-size: 18px; font-weight: 700; margin-left: 2px; color: inherit; }
+        
+        /* 숫자 위치 2px 하단으로 (-3px -> -1px) */
+        #dist-val { position: relative; top: -1px; }
+        /* m 폰트 1단계(20px) 키우고 상단으로 1px 이동 */
+        .dist-unit { font-family: 'Pretendard', sans-serif; font-size: 20px; font-weight: 700; margin-left: 2px; color: inherit; position: relative; top: -1px; }
 
         #altitude-area.is-danger .dist-val-wrap, #altitude-area.is-danger #dist-val, #altitude-area.is-danger .dist-unit { color: #D4574B !important; }
         .danger-pulse { animation: extreme-pulse 0.135s infinite alternate ease-in-out; }
@@ -86,16 +89,18 @@
 
     <div id="result-screen">
         <div class="result-content-wrap">
-            <h1 id="result-title" style="font-size: 42px; font-weight: 700; margin-bottom: 12px; margin-top: 0;">작전 완료!</h1>
-            <p id="result-desc" style="font-size: 22px; margin: 0 0 30px 0;">
+            <h1 id="result-title" style="font-size: 46px; font-weight: 700; margin-bottom: 12px; margin-top: 0;">작전 완료!</h1>
+            
+            <p id="result-desc" style="font-size: 20px; font-weight: 600; margin: 0 0 30px 0;">
                 보급품 <span id="final-score" style="font-family:'Tomorrow'; font-size: 32px; font-weight: 700;">0</span>개 획득 했어요
             </p>
-            <img id="result-img" src="result_complete.png" style="width: 154px; height: 154px; object-fit: contain;">
+            
+            <img id="result-img" src="result_complete.png" style="width: 210px; height: 210px; object-fit: contain; margin-top: 60px;">
         </div>
         
         <div class="btn-group">
-            <button onclick="goToMain()" style="flex: 1; height: 64px; background-color: #293257; color: #ffffff; font-size: 18px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; font-family: 'Pretendard', sans-serif;">메인</button>
-            <button onclick="retryGame()" style="flex: 1; height: 64px; background-color: #FFDB29; color: #111111; font-size: 18px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; font-family: 'Pretendard', sans-serif;">재도전</button>
+            <button onclick="goToMain()" style="flex: 1; height: 64px; background-color: #293257; color: #ffffff; font-size: 18px; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; font-family: 'Pretendard', sans-serif;">메인</button>
+            <button onclick="retryGame()" style="flex: 1; height: 64px; background-color: #FFDB29; color: #111111; font-size: 18px; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; font-family: 'Pretendard', sans-serif;">재도전</button>
         </div>
     </div>
 </div>
@@ -153,8 +158,6 @@
     let state = 'MAIN', frame = 0, dist = 1500, score = 0, lives = 3;
     let combo = 0, comboTimer = 0, popScale = 1.0, isGoldFever = false;
     let comboParticles = []; let windTimer = 0, windAlphaBase = 0;
-    
-    // 캐릭터 Y 위치 50px(캔버스 기준 100px) 아래로 이동
     const pX = WIDTH / 2, pY = (HEIGHT * 0.28) + 100;
     
     let pDir = 1, objects = [], clouds = [], fx = [];
@@ -220,8 +223,7 @@
         
         document.getElementById('result-title').innerText = title;
 
-        if (title.includes("실패")) {
-            // 실패 시 컬러 #333F56(rgb 51, 63, 86) / 투명도 90%
+        if (title.includes("작전실패")) {
             resultScreen.style.background = 'rgba(51, 63, 86, 0.9)'; 
             resultScreen.style.color = '#FFFFFF';
             descEl.innerHTML = "다시 도전해볼까요?";
@@ -238,16 +240,13 @@
         resultScreen.style.display = 'flex';
     }
 
-    // 메인으로 가기 버튼 (새로고침)
     function goToMain() {
         location.reload();
     }
 
-    // 재도전 버튼 (상태 즉시 초기화 후 재시작)
     function retryGame() {
         document.getElementById('result-screen').style.display = 'none';
         
-        // 게임 변수 리셋
         dist = 1500; score = 0; lives = 3; combo = 0; comboTimer = 0; popScale = 1.0; isGoldFever = false;
         comboParticles = []; windTimer = 0; windAlphaBase = 0;
         pDir = 1; objects = []; clouds = []; fx = [];
@@ -255,14 +254,12 @@
         faceTimer = 0; currentFace = 'normal'; currentRotation = 0; rotVel = 0;
         landY = HEIGHT + 1000; spawnDeck = [];
         
-        // UI 리셋
         updateLifeUI();
         document.getElementById('dist-val').innerText = '1500';
         document.getElementById('score-val').innerText = '0';
         updateAltimeter(1500);
         document.getElementById('hud').style.zIndex = '50';
         
-        // 즉시 플레이 상태 돌입
         state = 'PLAY';
         for(let j=0; j<5; j++) spawnCloud(Math.random() * HEIGHT);
         loop(); 
@@ -283,7 +280,7 @@
         if (e.code === 'Space') {
             if (state === 'MAIN') forceStart();
             else if (state === 'PLAY') { pDir *= -1; windTimer = 0; windAlphaBase = 0; }
-            else if (state === 'END') retryGame(); // END 상태일 때 스페이스바 누르면 즉시 재도전
+            else if (state === 'END') retryGame(); 
         }
     });
 
@@ -326,7 +323,7 @@
             if(landY > targetArrivalY) landY -= GLOBAL_SPEED; 
             else { 
                 landY = targetArrivalY; 
-                if(dist <= 5) { dist = 0; state = 'LANDED'; setTimeout(() => gameOver("작전 완료!"), 500); } 
+                if(dist <= 5) { dist = 0; state = 'LANDED'; setTimeout(() => gameOver("작전성공!"), 500); } 
             } 
             stopSpawning = true; 
         }
@@ -366,7 +363,6 @@
         ctx.save();
         if(dist < 150) {
             if(imgs.mountain.complete) { const mW = imgs.mountain.width * 0.82, mH = imgs.mountain.height * 0.82; for(let x = -3; x <= 3; x++) ctx.drawImage(imgs.mountain, ((mountainX * 1.0) % mW) + (x * mW), landY - mH, mW, mH); }
-            // 변경된 잔디 컬러 적용 (#5EC368)
             if(imgs.grass.complete) { ctx.fillStyle = '#5EC368'; ctx.fillRect(0, landY, WIDTH, HEIGHT); for(let x = -2; x <= 2; x++) ctx.drawImage(imgs.grass, ((grassX * 1.0) % WIDTH) + (x * WIDTH), landY, WIDTH, imgs.grass.height); }
             if(imgs.target.complete) { const tW = imgs.target.width || 240, tH = imgs.target.height || 96; ctx.drawImage(imgs.target, pX - tW, landY + 180, tW * 2, tH * 2); }
         }
