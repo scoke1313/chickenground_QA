@@ -213,6 +213,10 @@
     const springK = 0.18, friction = 0.75, GLOBAL_SPEED = 17.7; 
     let landY = HEIGHT + 1000, spawnDeck = [];
 
+    // ★★★ 60FPS 강제 고정을 위한 변수 추가 ★★★
+    let lastTime = 0;
+    const fpsInterval = 1000 / 60; // 60 FPS 기준 프레임 간격 (약 16.6ms)
+
     function updateLifeUI() { 
         const lifeTextEl = document.getElementById('life-text');
         if(lifeTextEl) { lifeTextEl.innerText = 'x' + lives; }
@@ -313,7 +317,10 @@
         
         state = 'PLAY';
         for(let j=0; j<5; j++) spawnCloud(Math.random() * HEIGHT);
-        loop(); 
+
+        // ★★★ 시작 시 시간 초기화 및 loop 호출 방식을 변경 ★★★
+        lastTime = 0;
+        requestAnimationFrame(loop); 
     }
 
     function forceStart() {
@@ -324,7 +331,10 @@
         document.getElementById('hud').style.display = 'block';
         state = 'PLAY';
         for(let j=0; j<5; j++) spawnCloud(Math.random() * HEIGHT);
-        loop(); 
+        
+        // ★★★ 시작 시 시간 초기화 및 loop 호출 방식을 변경 ★★★
+        lastTime = 0;
+        requestAnimationFrame(loop); 
     }
 
     window.addEventListener('keydown', (e) => {
@@ -338,8 +348,24 @@
     canvas.addEventListener('mousedown', () => { if(state === 'PLAY') { pDir *= -1; windTimer = 0; windAlphaBase = 0; } });
     canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(state === 'PLAY') { pDir *= -1; windTimer = 0; windAlphaBase = 0; } }, {passive: false});
 
-    function loop() {
+    // ★★★ FPS 제한을 위해 timestamp를 받도록 수정 ★★★
+    function loop(timestamp) {
         if(state === 'END') return;
+
+        // 다음 프레임 먼저 예약
+        requestAnimationFrame(loop);
+
+        // 초기화 및 Delta 타임 계산
+        if (!lastTime) lastTime = timestamp;
+        const deltaTime = timestamp - lastTime;
+
+        // 16.6ms 보다 빨리 프레임이 돌려고 하면 무시 (120Hz 모니터 방어)
+        if (deltaTime < fpsInterval) return;
+
+        // 초과된 시간을 빼서 다음 프레임 기준점을 정확하게 조정
+        lastTime = timestamp - (deltaTime % fpsInterval);
+
+        // --- 여기서부터 기존 로직 그대로 ---
         frame++; 
         if (isGoldFever) comboTimer = 30;
         else { if (comboTimer > 0) comboTimer--; else combo = 0; }
@@ -402,7 +428,6 @@
         fx.forEach((f, i) => { f.life--; if(f.life <= 0) { fx.splice(i, 1); return; } if(!f.follow) { f.x -= pDir * 11.5; f.y -= GLOBAL_SPEED; } f.y += f.vy || 0; });
         if(hitShakeFrame > 0) hitShakeFrame--; 
         draw(); 
-        requestAnimationFrame(loop);
     }
 
     function draw() {
