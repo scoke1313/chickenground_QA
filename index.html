@@ -66,7 +66,7 @@
 <div id="game-container">
     <div id="main-screen">
         <canvas id="rive-canvas"></canvas>
-        <div id="loading-text"> </div>
+        <div id="loading-text">로딩 중...</div>
         <img src="btn_start.svg" id="start-btn" onclick="forceStart()">
     </div>
 
@@ -213,9 +213,11 @@
     const springK = 0.18, friction = 0.75, GLOBAL_SPEED = 17.7; 
     let landY = HEIGHT + 1000, spawnDeck = [];
 
-    // ★★★ 60FPS 강제 고정을 위한 변수 추가 ★★★
-    let lastTime = 0;
-    const fpsInterval = 1000 / 60; // 60 FPS 기준 프레임 간격 (약 16.6ms)
+    // ★★★ 60FPS 강제 고정 변수 세팅 ★★★
+    let lastTime = performance.now();
+    const FPS = 60;
+    const fpsInterval = 1000 / FPS; 
+    let accumulator = 0; // 누적 시간 변수
 
     function updateLifeUI() { 
         const lifeTextEl = document.getElementById('life-text');
@@ -318,8 +320,9 @@
         state = 'PLAY';
         for(let j=0; j<5; j++) spawnCloud(Math.random() * HEIGHT);
 
-        // ★★★ 시작 시 시간 초기화 및 loop 호출 방식을 변경 ★★★
-        lastTime = 0;
+        // ★★★ 시작 시 시간 및 누적기 초기화 ★★★
+        lastTime = performance.now();
+        accumulator = 0;
         requestAnimationFrame(loop); 
     }
 
@@ -332,8 +335,9 @@
         state = 'PLAY';
         for(let j=0; j<5; j++) spawnCloud(Math.random() * HEIGHT);
         
-        // ★★★ 시작 시 시간 초기화 및 loop 호출 방식을 변경 ★★★
-        lastTime = 0;
+        // ★★★ 시작 시 시간 및 누적기 초기화 ★★★
+        lastTime = performance.now();
+        accumulator = 0;
         requestAnimationFrame(loop); 
     }
 
@@ -348,85 +352,96 @@
     canvas.addEventListener('mousedown', () => { if(state === 'PLAY') { pDir *= -1; windTimer = 0; windAlphaBase = 0; } });
     canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(state === 'PLAY') { pDir *= -1; windTimer = 0; windAlphaBase = 0; } }, {passive: false});
 
-    // ★★★ FPS 제한을 위해 timestamp를 받도록 수정 ★★★
-    function loop(timestamp) {
+    // ★★★ 60FPS 고정을 위해 물리 로직과 draw를 완벽히 분리한 loop 함수 ★★★
+    function loop(currentTime) {
         if(state === 'END') return;
 
-        // 다음 프레임 먼저 예약
+        // 다음 프레임을 미리 예약
         requestAnimationFrame(loop);
 
-        // 초기화 및 Delta 타임 계산
-        if (!lastTime) lastTime = timestamp;
-        const deltaTime = timestamp - lastTime;
+        // 시간 계산
+        if (!currentTime) currentTime = performance.now();
+        let deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
 
-        // 16.6ms 보다 빨리 프레임이 돌려고 하면 무시 (120Hz 모니터 방어)
-        if (deltaTime < fpsInterval) return;
+        // 탭 백그라운드 전환 등 긴 시간이 흐르는 경우 폭주 방지
+        if (deltaTime > 100) deltaTime = 100;
 
-        // 초과된 시간을 빼서 다음 프레임 기준점을 정확하게 조정
-        lastTime = timestamp - (deltaTime % fpsInterval);
+        // 흐른 시간을 accumulator에 누적
+        accumulator += deltaTime;
 
-        // --- 여기서부터 기존 로직 그대로 ---
-        frame++; 
-        if (isGoldFever) comboTimer = 30;
-        else { if (comboTimer > 0) comboTimer--; else combo = 0; }
+        // 누적 시간이 16.6ms를 넘을 때마다 물리/로직 업데이트 (60FPS로 동작)
+        while (accumulator >= fpsInterval) {
+            
+            // --- 물리 및 상태 업데이트 ---
+            frame++; 
+            if (isGoldFever) comboTimer = 30;
+            else { if (comboTimer > 0) comboTimer--; else combo = 0; }
 
-        if(popScale > 1.0) popScale -= 0.08; if(popScale < 1.0) popScale = 1.0;
-        let targetRot = (pDir === 1) ? -27 * Math.PI / 180 : 0;
-        rotVel = (rotVel + (targetRot - currentRotation) * springK) * friction;
-        currentRotation += rotVel;
+            if(popScale > 1.0) popScale -= 0.08; if(popScale < 1.0) popScale = 1.0;
+            let targetRot = (pDir === 1) ? -27 * Math.PI / 180 : 0;
+            rotVel = (rotVel + (targetRot - currentRotation) * springK) * friction;
+            currentRotation += rotVel;
 
-        if(state === 'PLAY') {
-            dist -= 1.29; mountainX -= pDir * 2.07; grassX -= pDir * 11.5;
-            if(frame % 7 === 0) spawnObj(); if(frame % 80 === 0) spawnCloud();
-            windTimer++; if(windAlphaBase < 1) windAlphaBase += 0.1; 
-        }
-
-        comboParticles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if(p.life <= 0) comboParticles.splice(i, 1); });
-        
-        const currentDist = Math.max(0, Math.floor(dist));
-        document.getElementById('dist-val').innerText = currentDist;
-        updateAltimeter(currentDist);
-
-        const altitudeArea = document.getElementById('altitude-area');
-        if(currentDist <= 300) { 
-            altitudeArea.classList.add('is-danger'); 
-            if(currentDist > 0 && state === 'PLAY') altitudeArea.classList.add('danger-pulse'); 
-            else altitudeArea.classList.remove('danger-pulse');
-        } else altitudeArea.classList.remove('is-danger', 'danger-pulse');
-        
-        document.getElementById('score-val').innerText = score;
-        const targetArrivalY = pY + 140 - 248;
-        if(dist < 150 && state === 'PLAY') { 
-            if(landY > targetArrivalY) landY -= GLOBAL_SPEED; 
-            else { 
-                landY = targetArrivalY; 
-                if(dist <= 5) { dist = 0; state = 'LANDED'; setTimeout(() => gameOver("작전 성공!"), 500); } 
-            } 
-            stopSpawning = true; 
-        }
-
-        objects.forEach((o, i) => { 
-            o.y -= GLOBAL_SPEED; o.x -= pDir * 11.5; 
-            if(o.y < -200) { objects.splice(i, 1); return; } 
-            if(state === 'PLAY' && Math.sqrt((pX - o.x)**2 + (pY - o.y)**2) < 115) {
-                if(o.type === 'BAD') { 
-                    playSound('hit'); lives--; score = Math.max(0, score - 10); combo = 0; comboTimer = 0; isGoldFever = false; 
-                    updateLifeUI(); hitShakeFrame = 10; currentFace = 'miss'; faceTimer = 78; 
-                    fx.push({ x: pX + 70, y: pY + 20, img: imgs.damage, life: 60, follow: true, vy: -4.2, isEffect: false }); 
-                    if(lives <= 0) setTimeout(() => gameOver("실패"), 500);
-                } else if(o.type === 'GOLD') triggerGoldFever();
-                else { 
-                    playSound('item'); score += (combo >= 20) ? 2 : 1; addCombo(); 
-                    if(isGoldFever) isGoldFever = false; 
-                    fx.push({ x: o.x, y: o.y, img: imgs.effect, life: 60, follow: false, vy: -5, isEffect: true }); 
-                }
-                objects.splice(i, 1);
+            if(state === 'PLAY') {
+                dist -= 1.29; mountainX -= pDir * 2.07; grassX -= pDir * 11.5;
+                if(frame % 7 === 0) spawnObj(); if(frame % 80 === 0) spawnCloud();
+                windTimer++; if(windAlphaBase < 1) windAlphaBase += 0.1; 
             }
-        });
 
-        clouds.forEach(c => { c.y -= c.speed; c.x -= pDir * c.speed * 0.3; });
-        fx.forEach((f, i) => { f.life--; if(f.life <= 0) { fx.splice(i, 1); return; } if(!f.follow) { f.x -= pDir * 11.5; f.y -= GLOBAL_SPEED; } f.y += f.vy || 0; });
-        if(hitShakeFrame > 0) hitShakeFrame--; 
+            comboParticles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if(p.life <= 0) comboParticles.splice(i, 1); });
+            
+            const currentDist = Math.max(0, Math.floor(dist));
+            document.getElementById('dist-val').innerText = currentDist;
+            updateAltimeter(currentDist);
+
+            const altitudeArea = document.getElementById('altitude-area');
+            if(currentDist <= 300) { 
+                altitudeArea.classList.add('is-danger'); 
+                if(currentDist > 0 && state === 'PLAY') altitudeArea.classList.add('danger-pulse'); 
+                else altitudeArea.classList.remove('danger-pulse');
+            } else altitudeArea.classList.remove('is-danger', 'danger-pulse');
+            
+            document.getElementById('score-val').innerText = score;
+            const targetArrivalY = pY + 140 - 248;
+            if(dist < 150 && state === 'PLAY') { 
+                if(landY > targetArrivalY) landY -= GLOBAL_SPEED; 
+                else { 
+                    landY = targetArrivalY; 
+                    if(dist <= 5) { dist = 0; state = 'LANDED'; setTimeout(() => gameOver("작전 성공!"), 500); } 
+                } 
+                stopSpawning = true; 
+            }
+
+            objects.forEach((o, i) => { 
+                o.y -= GLOBAL_SPEED; o.x -= pDir * 11.5; 
+                if(o.y < -200) { objects.splice(i, 1); return; } 
+                if(state === 'PLAY' && Math.sqrt((pX - o.x)**2 + (pY - o.y)**2) < 115) {
+                    if(o.type === 'BAD') { 
+                        playSound('hit'); lives--; score = Math.max(0, score - 10); combo = 0; comboTimer = 0; isGoldFever = false; 
+                        updateLifeUI(); hitShakeFrame = 10; currentFace = 'miss'; faceTimer = 78; 
+                        fx.push({ x: pX + 70, y: pY + 20, img: imgs.damage, life: 60, follow: true, vy: -4.2, isEffect: false }); 
+                        if(lives <= 0) setTimeout(() => gameOver("실패"), 500);
+                    } else if(o.type === 'GOLD') triggerGoldFever();
+                    else { 
+                        playSound('item'); score += (combo >= 20) ? 2 : 1; addCombo(); 
+                        if(isGoldFever) isGoldFever = false; 
+                        fx.push({ x: o.x, y: o.y, img: imgs.effect, life: 60, follow: false, vy: -5, isEffect: true }); 
+                    }
+                    objects.splice(i, 1);
+                }
+            });
+
+            clouds.forEach(c => { c.y -= c.speed; c.x -= pDir * c.speed * 0.3; });
+            fx.forEach((f, i) => { f.life--; if(f.life <= 0) { fx.splice(i, 1); return; } if(!f.follow) { f.x -= pDir * 11.5; f.y -= GLOBAL_SPEED; } f.y += f.vy || 0; });
+            if(hitShakeFrame > 0) hitShakeFrame--; 
+
+            // 처리된 만큼(16.6ms) 누적기에서 차감
+            accumulator -= fpsInterval;
+        }
+
+        // --- 화면 렌더링 ---
+        // while문(물리 로직)과 무관하게 모니터 주사율에 맞춰 부드럽게 매 프레임 그리기
         draw(); 
     }
 
