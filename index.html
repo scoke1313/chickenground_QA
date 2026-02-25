@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -202,11 +203,11 @@
     canvas.width = WIDTH; canvas.height = HEIGHT;
     const ctx = canvas.getContext('2d');
 
-    // ★★★ 캐릭터 Y 좌표(pY)를 56px 위로 상승 (레티나 비율 2배수 적용하여 -112) ★★★
+    // ★★★ 캐릭터 Y 좌표(pY)를 56px 올렸던 것에서 13px 다시 하단으로 내림 (-43 * 2) ★★★
     let state = 'MAIN', frame = 0, dist = 1500, score = 0, lives = 3;
     let combo = 0, comboTimer = 0, popScale = 1.0, isGoldFever = false;
     let comboParticles = []; let windTimer = 0, windAlphaBase = 0;
-    const pX = WIDTH / 2, pY = (HEIGHT * 0.28) + 100 - (56 * 2); 
+    const pX = WIDTH / 2, pY = (HEIGHT * 0.28) + 100 - (43 * 2); 
     
     let pDir = 1, objects = [], clouds = [], fx = [];
     let stopSpawning = false, mountainX = 0, grassX = 0, hitShakeFrame = 0;
@@ -446,7 +447,6 @@
             if(imgs.target.complete) { const tW = imgs.target.width || 240, tH = imgs.target.height || 96; ctx.drawImage(imgs.target, pX - tW, landY + 180, tW * 2, tH * 2); }
         }
 
-        // ★★★ 바람선 위치 원래대로 원복 (상단 110px 고정) ★★★
         if(state === 'PLAY' && windAlphaBase > 0) {
             let imgNormal, imgMove; if(pDir === 1) { imgNormal = imgs.windR; imgMove = imgs.windR_move; } else { imgNormal = imgs.windL; imgMove = imgs.windL_move; }
             if(imgNormal.complete && imgMove.complete) { 
