@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.9.10 - Perfect Result Screen</title>
+    <title>둥둥그라운드 v1.9.11 - Dynamic Patterns 적용</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -219,6 +218,9 @@
     const FPS = 60;
     const fpsInterval = 1000 / FPS; 
     let accumulator = 0;
+    
+    // ★★★ 변칙 스폰용 프레임 변수 추가 ★★★
+    let nextSpawnFrame = 0; 
 
     function updateLifeUI() { 
         const lifeTextEl = document.getElementById('life-text');
@@ -246,11 +248,32 @@
         clouds.push({ x: Math.random() * WIDTH, y: y || HEIGHT + 150, img: imgs['cloud'+(Math.floor(Math.random()*3)+1)], scale: baseScale * 1.3, alpha: depth === 0 ? 0.8 : 0.5, speed: depth === 0 ? 4.0 : 2.0, depth });
     }
 
-    function spawnObj() {
+    // ★★★ 변칙 패턴 스폰 함수 추가 ★★★
+    function spawnPattern() {
+        if(stopSpawning) return;
+        const patternRand = Math.random();
+
+        if (patternRand < 0.15) { // 15% 확률로 쌍(Pair) 생성
+            const gap = 200 + Math.random() * 150;
+            const startX = Math.random() * (WIDTH - gap - 120) + 60;
+            spawnObj(startX);
+            spawnObj(startX + gap);
+        } else if (patternRand < 0.25) { // 10% 확률로 가로 3개 나란히 (중앙 돌파 패턴)
+            const midX = WIDTH / 2 + (Math.random() - 0.5) * 100;
+            spawnObj(midX - 180);
+            spawnObj(midX);
+            spawnObj(midX + 180);
+        } else { // 기본 1개 생성
+            spawnObj();
+        }
+    }
+
+    // ★★★ x 좌표를 인자로 받을 수 있도록 수정 ★★★
+    function spawnObj(forcedX) {
         if(stopSpawning) return;
         if(spawnDeck.length === 0) refillSpawnDeck();
         const type = spawnDeck.shift(); 
-        let x = Math.random() * (WIDTH - 120) + 60; 
+        let x = forcedX || (Math.random() * (WIDTH - 120) + 60); 
         const spawnY = HEIGHT + 200;
         if(type === 'BAD') objects.push({ x, y: spawnY, type: 'BAD', img: imgs.heli, flipped: Math.random() > 0.5 });
         else if(type === 'GOLD') objects.push({ x, y: spawnY, type: 'GOLD', img: imgs.gold });
@@ -323,6 +346,7 @@
 
         lastTime = performance.now();
         accumulator = 0;
+        nextSpawnFrame = 0; // 재시작 시 프레임 초기화
         requestAnimationFrame(loop); 
     }
 
@@ -337,6 +361,7 @@
         
         lastTime = performance.now();
         accumulator = 0;
+        nextSpawnFrame = 0; // 시작 시 프레임 초기화
         requestAnimationFrame(loop); 
     }
 
@@ -377,7 +402,18 @@
 
             if(state === 'PLAY') {
                 dist -= 1.29; mountainX -= pDir * 2.07; grassX -= pDir * 11.5;
-                if(frame % 7 === 0) spawnObj(); if(frame % 80 === 0) spawnCloud();
+                
+                // ★★★ 변칙 스폰 로직 교체 ★★★
+                if (frame >= nextSpawnFrame) {
+                    spawnPattern();
+                    // 난이도에 따른 스폰 간격 조정 (거리가 가까워질수록 빨라짐)
+                    const difficulty = Math.max(0, (1500 - dist) / 300); 
+                    const minInt = Math.max(4, 7 - Math.floor(difficulty));
+                    const maxInt = Math.max(8, 14 - Math.floor(difficulty));
+                    nextSpawnFrame = frame + Math.floor(Math.random() * (maxInt - minInt + 1)) + minInt;
+                }
+                
+                if(frame % 80 === 0) spawnCloud();
                 windTimer++; if(windAlphaBase < 1) windAlphaBase += 0.1; 
             }
 
